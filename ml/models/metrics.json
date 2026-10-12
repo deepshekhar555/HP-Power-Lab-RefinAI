@@ -1,0 +1,35 @@
+{
+  "RUL": {
+    "model": "GradientBoosting",
+    "MAE": 12.16,
+    "RMSE": 17.42,
+    "R2": 0.811,
+    "validation_MAE": 12.3,
+    "baseline_MAE": 38.01,
+    "dataset": "NASA C-MAPSS FD001 official test set",
+    "train_rows": 20631,
+    "train_engines": 100,
+    "test_engines": 100,
+    "rul_cap_cycles": 125,
+    "evaluation": "Engine-held-out model selection; official FD001 test labels"
+  },
+  "Anomaly": {
+    "flagged": 6,
+    "total": 100,
+    "dataset": "NASA C-MAPSS FD001 official test endpoints",
+    "evaluation": "Unsupervised flags only; no anomaly ground-truth labels"
+  },
+  "Energy": {
+    "model": "GradientBoosting",
+    "MAE_MW": 2.22,
+    "RMSE_MW": 3.028,
+    "R2": 0.96838,
+    "dataset": "UCI Combined Cycle Power Plant",
+    "rows": 9568,
+    "test_rows": 1914,
+    "evaluation": "Held-out 20% test split; random_state=42",
+    "test_underpredicted_points": 683,
+    "residual_note": "Model residual proxy only; not measured plant waste",
+    "replay_file": "dashboard/ccpp_replay.json"
+  }
+}

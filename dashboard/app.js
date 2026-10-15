@@ -132,6 +132,52 @@ function renderDecisionPanel(sample) {
       </div>`;
   }).join("");
 
+  const eventStream = document.getElementById("event-stream");
+  if (eventStream) {
+    const eventEntries = [
+      { level: "ok", text: `Ambient conditions ${formatNumber(sample.AT, 1)}°C / ${formatNumber(sample.RH, 1)}% humidity` },
+      { level: decision.riskIndex > 55 ? "warn" : "ok", text: `Residual deviation ${formatNumber(Math.abs(sample.residual_MW), 2)} MW against benchmark` },
+      { level: decision.energyImpact > 14 ? "warn" : "ok", text: `Projected energy impact ${formatNumber(decision.energyImpact, 1)} MWh` },
+      { level: decision.actions.some(action => action.level === "crit") ? "crit" : "ok", text: decision.actions.find(action => action.level === "crit")?.text || "All monitored systems within expected operating envelope" },
+    ];
+    eventStream.innerHTML = eventEntries.map(item => `
+      <li class="event-item ${item.level === "crit" ? "crit" : item.level === "warn" ? "warn" : "ok"}">
+        <span class="event-dot"></span>
+        <span>${item.text}</span>
+      </li>
+    `).join("");
+  }
+
+  const availability = Math.max(88, Math.min(99.8, 100 - decision.riskIndex * 0.09));
+  const efficiency = Math.max(78, Math.min(99, decision.efficiency));
+  const stability = Math.max(75, 100 - Math.abs(sample.residual_MW) * 9.5);
+
+  const availabilityEl = document.getElementById("status-availability");
+  const availabilityNote = document.getElementById("status-availability-note");
+  const efficiencyEl = document.getElementById("status-efficiency");
+  const efficiencyNote = document.getElementById("status-efficiency-note");
+  const riskEl = document.getElementById("status-risk");
+  const riskNote = document.getElementById("status-risk-note");
+  const stabilityEl = document.getElementById("status-stability");
+  const stabilityNote = document.getElementById("status-stability-note");
+
+  if (availabilityEl) {
+    availabilityEl.textContent = `${formatNumber(availability, 1)}%`;
+    availabilityNote.textContent = availability > 96 ? "High-ready" : "Watch window";
+  }
+  if (efficiencyEl) {
+    efficiencyEl.textContent = `${formatNumber(efficiency, 1)}%`;
+    efficiencyNote.textContent = `${formatNumber(sample.PE, 1)} MW output`;
+  }
+  if (riskEl) {
+    riskEl.textContent = `${Math.round(decision.riskIndex)}/100`;
+    riskNote.textContent = decision.riskIndex > 55 ? "Elevated monitoring" : "Stable health";
+  }
+  if (stabilityEl) {
+    stabilityEl.textContent = `${formatNumber(stability, 1)}%`;
+    stabilityNote.textContent = `${formatNumber(Math.abs(sample.residual_MW), 2)} MW residual`;
+  }
+
   const actionList = document.getElementById("action-list");
   actionList.innerHTML = decision.actions.map(action => `
     <li class="${action.level === "crit" ? "crit" : action.level === "warn" ? "warn" : ""}">
@@ -147,7 +193,7 @@ function renderDecisionPanel(sample) {
   const vacuumValue = document.getElementById("scenario-vacuum-value");
   const maintValue = document.getElementById("scenario-maint-value");
   const outputEl = document.getElementById("scenario-output");
-  const riskEl = document.getElementById("scenario-risk");
+  const scenarioRiskEl = document.getElementById("scenario-risk");
   const energyEl = document.getElementById("scenario-energy");
   const roiEnergy = document.getElementById("roi-energy");
   const roiMaint = document.getElementById("roi-maint");
@@ -170,7 +216,7 @@ function renderDecisionPanel(sample) {
     vacuumValue.textContent = `${Number(vacuumSlider.value) >= 0 ? "+" : ""}${vacuumSlider.value} cm Hg`;
     maintValue.textContent = `${maintSlider.value} / 100`;
     outputEl.textContent = `${formatNumber(values.output, 2)} MW`;
-    riskEl.textContent = `${Math.round(values.risk)}/100`;
+    scenarioRiskEl.textContent = `${Math.round(values.risk)}/100`;
     energyEl.textContent = `${formatNumber(values.energy, 2)} MWh`;
     roiEnergy.textContent = `${formatNumber(decision.energyImpact * 1.15, 1)} MWh`;
     roiMaint.textContent = `$${Math.round(decision.annualValue * 0.18).toLocaleString("en-IN")}`;

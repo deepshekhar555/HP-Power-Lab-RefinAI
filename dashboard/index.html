@@ -68,6 +68,38 @@
     </div>
   </section>
 
+  <section class="card system-overview">
+    <div class="overview-header">
+      <div>
+        <span class="eyebrow">OPERATING SUMMARY</span>
+        <h2>Control room overview</h2>
+      </div>
+      <span class="chip">Benchmark replay status</span>
+    </div>
+    <div class="overview-grid">
+      <article class="mini-card">
+        <span class="mini-label">Availability</span>
+        <strong id="status-availability">--</strong>
+        <small id="status-availability-note">Awaiting data</small>
+      </article>
+      <article class="mini-card emphasis">
+        <span class="mini-label">Efficiency</span>
+        <strong id="status-efficiency">--</strong>
+        <small id="status-efficiency-note">Benchmark delta</small>
+      </article>
+      <article class="mini-card">
+        <span class="mini-label">Risk index</span>
+        <strong id="status-risk">--</strong>
+        <small id="status-risk-note">Health watch</small>
+      </article>
+      <article class="mini-card">
+        <span class="mini-label">Output stability</span>
+        <strong id="status-stability">--</strong>
+        <small id="status-stability-note">Residual spread</small>
+      </article>
+    </div>
+  </section>
+
   <!-- TAB 1: measured-data plant twin -->
   <section class="tabpanel active" id="panel-twin">
     <div class="grid twin-grid">
@@ -92,6 +124,13 @@
     <div class="card panel process-summary">
       <div><span class="eyebrow">PROCESS TRAIN</span><p>Air intake <b>&rarr;</b> gas turbine <b>&rarr;</b> heat-recovery steam generator <b>&rarr;</b> steam turbine <b>&rarr;</b> condenser and cooling loop</p></div>
       <p class="info">Plant equipment is a detailed visual model. Instrument values come from the selected UCI sample; the dataset does not provide separate tags for every component.</p>
+    </div>
+    <div class="card panel event-panel">
+      <div class="event-head">
+        <h2>Operations event feed</h2>
+        <span class="chip subtle">Current replay window</span>
+      </div>
+      <ul class="event-list" id="event-stream"></ul>
     </div>
   </section>
 

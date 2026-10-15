@@ -1,0 +1,12 @@
+﻿services:
+  refinai-platform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: refinai_app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - AWS_REGION=ap-south-1
+    restart: unless-stopped

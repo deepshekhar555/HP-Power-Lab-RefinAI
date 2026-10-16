@@ -1,5 +1,5 @@
 ﻿document.addEventListener('DOMContentLoaded', () => {
-  console.log('[RefinAI Extension] Initializing Competition-Grade Overlays...');
+  console.log('[RefinAI Extension] Initializing Expanded Header Tabs...');
 
   const navContainer = document.querySelector('.tabs');
   if (navContainer) {
@@ -8,7 +8,11 @@
       { id: 'efficiency', label: 'Predictive Efficiency' },
       { id: 'heatmap', label: 'Anomaly Heatmap' },
       { id: 'spatial', label: '3D Spatial Twin' },
-      { id: 'stresstest', label: 'Stress-Test Simulation' }
+      { id: 'stresstest', label: 'Stress-Test Simulation' },
+      { id: 'heatrate', label: 'Thermal Heat Rate' },
+      { id: 'degradation', label: 'Degradation Predictor' },
+      { id: 'carbon', label: 'Carbon Footprint Index' },
+      { id: 'awscloud', label: 'AWS Cloud Telemetry' }
     ];
 
     newTabs.forEach(t => {
@@ -23,36 +27,50 @@
   }
 
   // Inject Non-Destructive Floating Panels Overlay
-  const mainOverlay = document.createElement('div');
-  mainOverlay.id = 'refinai-overlay-layer';
-  mainOverlay.style.position = 'fixed';
-  mainOverlay.style.bottom = '20px';
-  mainOverlay.style.right = '20px';
-  mainOverlay.style.zIndex = '9999';
-  mainOverlay.style.display = 'flex';
-  mainOverlay.style.flexDirection = 'column';
-  mainOverlay.style.gap = '10px';
+  let mainOverlay = document.getElementById('refinai-overlay-layer');
+  if (!mainOverlay) {
+    mainOverlay = document.createElement('div');
+    mainOverlay.id = 'refinai-overlay-layer';
+    mainOverlay.style.position = 'fixed';
+    mainOverlay.style.bottom = '20px';
+    mainOverlay.style.right = '20px';
+    mainOverlay.style.zIndex = '9999';
+    mainOverlay.style.display = 'flex';
+    mainOverlay.style.flexDirection = 'column';
+    mainOverlay.style.gap = '10px';
 
-  mainOverlay.innerHTML = `
-    <!-- Stress Test Panel -->
-    <div id="panel-stresstest" style="display:none; background:rgba(15,23,42,0.92); border:1px solid #3b82f6; border-radius:10px; padding:12px; color:#fff; width:280px; backdrop-filter:blur(8px);">
-      <h4 style="margin:0 0 8px 0; font-size:12px; color:#60a5fa; font-weight:bold;">⚡ SYNTHETIC ANOMALY INJECTION</h4>
-      <button id="btn-heatwave" style="width:100%; padding:6px; margin-bottom:6px; background:#ef4444; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Simulate Heat Wave (38°C)</button>
-      <button id="btn-vacuumloss" style="width:100%; padding:6px; background:#f59e0b; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Simulate Vacuum Loss (75 cmHg)</button>
-    </div>
+    mainOverlay.innerHTML = `
+      <!-- Stress Test Panel -->
+      <div id="panel-stresstest" style="display:none; background:rgba(15,23,42,0.92); border:1px solid #3b82f6; border-radius:10px; padding:12px; color:#fff; width:290px; backdrop-filter:blur(8px);">
+        <h4 style="margin:0 0 8px 0; font-size:12px; color:#60a5fa; font-weight:bold;">⚡ SYNTHETIC ANOMALY INJECTION</h4>
+        <button id="btn-heatwave" style="width:100%; padding:6px; margin-bottom:6px; background:#ef4444; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Simulate Heat Wave (38°C)</button>
+        <button id="btn-vacuumloss" style="width:100%; padding:6px; background:#f59e0b; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Simulate Vacuum Loss (75 cmHg)</button>
+      </div>
 
-    <!-- Heatmap & Residual Panel -->
-    <div id="panel-heatmap" style="display:none; background:rgba(15,23,42,0.92); border:1px solid #f59e0b; border-radius:10px; padding:12px; color:#fff; width:280px; backdrop-filter:blur(8px);">
-      <h4 style="margin:0 0 8px 0; font-size:12px; color:#fbbf24; font-weight:bold;">🔥 MODEL RESIDUAL HEATMAP (XAI)</h4>
-      <div style="display:flex; justify-between:space-between; font-size:11px; margin-bottom:4px;">
-        <span>PE Residual Delta:</span><strong id="heat-delta" style="color:#f59e0b;">1.12 MW</strong>
+      <!-- Heatmap Panel -->
+      <div id="panel-heatmap" style="display:none; background:rgba(15,23,42,0.92); border:1px solid #f59e0b; border-radius:10px; padding:12px; color:#fff; width:290px; backdrop-filter:blur(8px);">
+        <h4 style="margin:0 0 8px 0; font-size:12px; color:#fbbf24; font-weight:bold;">🔥 MODEL RESIDUAL HEATMAP (XAI)</h4>
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+          <span>PE Residual Delta:</span><strong id="heat-delta" style="color:#f59e0b;">1.12 MW</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px;">
+          <span>Confidence Interval:</span><strong style="color:#10b981;">98.4%</strong>
+        </div>
       </div>
-      <div style="display:flex; justify-between:space-between; font-size:11px;">
-        <span>Confidence Interval:</span><strong style="color:#10b981;">98.4%</strong>
+
+      <!-- Carbon & AWS Panel -->
+      <div id="panel-cloud" style="display:none; background:rgba(15,23,42,0.92); border:1px solid #10b981; border-radius:10px; padding:12px; color:#fff; width:290px; backdrop-filter:blur(8px);">
+        <h4 style="margin:0 0 8px 0; font-size:12px; color:#34d399; font-weight:bold;">☁️ AWS ECS & CARBON FOOTPRINT</h4>
+        <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+          <span>AWS Region:</span><strong style="color:#60a5fa;">ap-south-1 (Mumbai)</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:11px;">
+          <span>CO2 Emissions:</span><strong id="co2-val" style="color:#34d399;">0.38 kg/kWh</strong>
+        </div>
       </div>
-    </div>
-  `;
-  document.body.appendChild(mainOverlay);
+    `;
+    document.body.appendChild(mainOverlay);
+  }
 
   // Handle Tab Switch Actions
   document.body.addEventListener('click', (e) => {
@@ -61,12 +79,13 @@
       e.target.classList.add('active');
       const tab = e.target.getAttribute('data-tab');
 
-      // Toggle Overlay Panels
       const panelStress = document.getElementById('panel-stresstest');
       const panelHeat = document.getElementById('panel-heatmap');
+      const panelCloud = document.getElementById('panel-cloud');
 
       if (panelStress) panelStress.style.display = (tab === 'stresstest') ? 'block' : 'none';
       if (panelHeat) panelHeat.style.display = (tab === 'heatmap') ? 'block' : 'none';
+      if (panelCloud) panelCloud.style.display = (tab === 'carbon' || tab === 'awscloud') ? 'block' : 'none';
     }
   });
 

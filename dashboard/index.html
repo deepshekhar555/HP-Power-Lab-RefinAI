@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RefinAI — CCPP 3D Digital Twin</title>
+  <title>RefinAI — Combined-Cycle Power Plant Digital Twin</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; }
@@ -12,86 +14,177 @@
   </style>
 </head>
 <body class="p-6">
+
   <!-- Header -->
   <header class="flex justify-between items-center mb-6">
     <div>
       <h1 class="text-2xl font-bold text-red-500 flex items-center gap-2">
-        <span>⛽</span> RefinAI Digital Twin
+        <span>⛽</span> RefinAI
       </h1>
-      <p class="text-xs text-slate-400">Instrumented CCPP digital twin — ROS 2 Live Telemetry</p>
+      <p class="text-xs text-slate-400">Instrumented CCPP digital twin — measured-data & live ROS 2 telemetry</p>
     </div>
-    <div id="status-badge" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-      SYSTEM OPTIMAL
+    <div class="flex items-center gap-3">
+      <span class="text-xs px-3 py-1 rounded bg-slate-800 text-amber-400 border border-slate-700">3D Plant Twin</span>
+      <div id="status-badge" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+        SYSTEM OPTIMAL
+      </div>
     </div>
   </header>
 
-  <!-- Metric Cards -->
+  <!-- Metric Cards Top Bar -->
   <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
     <div class="glass-card p-4 rounded-xl">
-      <p class="text-xs text-slate-400 font-semibold">AMBIENT TEMP</p>
-      <p id="val-at" class="text-2xl font-bold text-white mt-1">25.00 <span class="text-sm font-normal text-slate-400">°C</span></p>
+      <p class="text-xs text-slate-400 font-semibold">AMBIENT TEMPERATURE</p>
+      <p id="val-at" class="text-2xl font-bold text-white mt-1">24.40 <span class="text-sm font-normal text-slate-400">°C</span></p>
+      <p class="text-[10px] text-slate-500 mt-1">AT-101 · C</p>
     </div>
     <div class="glass-card p-4 rounded-xl">
       <p class="text-xs text-slate-400 font-semibold">EXHAUST VACUUM</p>
-      <p id="val-v" class="text-2xl font-bold text-white mt-1">60.00 <span class="text-sm font-normal text-slate-400">cm Hg</span></p>
+      <p id="val-v" class="text-2xl font-bold text-white mt-1">60.32 <span class="text-sm font-normal text-slate-400">cm Hg</span></p>
+      <p class="text-[10px] text-slate-500 mt-1">V-201 · cm Hg</p>
     </div>
     <div class="glass-card p-4 rounded-xl">
-      <p class="text-xs text-slate-400 font-semibold">PRESSURE</p>
-      <p id="val-ap" class="text-2xl font-bold text-white mt-1">1013.00 <span class="text-sm font-normal text-slate-400">mbar</span></p>
+      <p class="text-xs text-slate-400 font-semibold">AMBIENT PRESSURE</p>
+      <p id="val-ap" class="text-2xl font-bold text-white mt-1">1,016.50 <span class="text-sm font-normal text-slate-400">mbar</span></p>
+      <p class="text-[10px] text-slate-500 mt-1">AP-101 · mbar</p>
     </div>
     <div class="glass-card p-4 rounded-xl">
-      <p class="text-xs text-slate-400 font-semibold">HUMIDITY</p>
-      <p id="val-rh" class="text-2xl font-bold text-white mt-1">70.00 <span class="text-sm font-normal text-slate-400">%</span></p>
+      <p class="text-xs text-slate-400 font-semibold">RELATIVE HUMIDITY</p>
+      <p id="val-rh" class="text-2xl font-bold text-white mt-1">70.96 <span class="text-sm font-normal text-slate-400">%</span></p>
+      <p class="text-[10px] text-slate-500 mt-1">RH-101 · %</p>
     </div>
     <div class="glass-card p-4 rounded-xl">
-      <p class="text-xs text-slate-400 font-semibold">NET OUTPUT</p>
-      <p id="val-pe" class="text-2xl font-bold text-amber-400 mt-1">440.00 <span class="text-sm font-normal text-slate-400">MW</span></p>
+      <p class="text-xs text-slate-400 font-semibold">MEASURED NET OUTPUT</p>
+      <p id="val-pe" class="text-2xl font-bold text-amber-400 mt-1">447.73 <span class="text-sm font-normal text-slate-400">MW</span></p>
+      <p class="text-[10px] text-slate-500 mt-1">PE-401 · MW</p>
     </div>
     <div class="glass-card p-4 rounded-xl">
-      <p class="text-xs text-slate-400 font-semibold">EFFICIENCY</p>
-      <p id="val-eff" class="text-2xl font-bold text-cyan-400 mt-1">81.7 <span class="text-sm font-normal text-slate-400">%</span></p>
+      <p class="text-xs text-slate-400 font-semibold">MODEL OUTPUT ESTIMATE</p>
+      <p id="val-eff" class="text-2xl font-bold text-white mt-1">444.41 <span class="text-sm font-normal text-slate-400">MW</span></p>
+      <p class="text-[10px] text-slate-500 mt-1">AI-401 · MW</p>
     </div>
   </div>
 
-  <!-- Main Workspace -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Chart & Stream Panel -->
-    <div class="lg:col-span-2 glass-card p-5 rounded-xl">
-      <h2 class="text-sm font-semibold text-slate-300 mb-4">Real-Time Power Output & Temperature Trend</h2>
-      <div class="h-64">
-        <canvas id="telemetryChart"></canvas>
+  <!-- Control Room Overview -->
+  <div class="glass-card p-5 rounded-xl mb-6">
+    <p class="text-xs font-semibold text-amber-500 tracking-wider">OPERATING SUMMARY</p>
+    <h2 class="text-lg font-bold text-white mb-2">Control room overview</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-slate-300">
+      <div>Benchmark replay status: <strong class="text-white">Active</strong></div>
+      <div>Availability: <strong class="text-white">93.5%</strong> Watch window</div>
+      <div>Efficiency: <strong id="summary-eff" class="text-emerald-400">81.7%</strong> 447.7 MW output</div>
+      <div>Risk index: <strong id="risk-val" class="text-emerald-400">15/100</strong> <span id="risk-status">Optimal</span></div>
+    </div>
+  </div>
+
+  <!-- 3D Model & Live Telemetry Panel Split -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- 3D Three.js Container -->
+    <div class="lg:col-span-2 glass-card p-4 rounded-xl">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-sm font-semibold text-slate-300">Combined-Cycle Power Plant <span class="text-xs text-slate-500 font-normal">(drag to rotate, scroll to zoom)</span></h2>
       </div>
+      <div id="three-canvas" class="w-full h-80 rounded-lg overflow-hidden bg-slate-950"></div>
     </div>
 
-    <!-- Active Incident Logs -->
+    <!-- Live Anomaly & Incident Stream -->
     <div class="glass-card p-5 rounded-xl flex flex-col justify-between">
       <div>
         <h2 class="text-sm font-semibold text-slate-300 mb-3">Live Anomaly & Incident Stream</h2>
-        <div id="alerts-container" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+        <div id="alerts-container" class="space-y-2 max-h-64 overflow-y-auto pr-1">
           <div class="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700 text-xs text-slate-300">
-            [System initialized] Connected to WebSocket telemetry stream.
+            [System initialized] Connected to ROS 2 WebSocket telemetry stream.
           </div>
         </div>
       </div>
       <div class="mt-4 pt-4 border-t border-slate-700/60 text-xs text-slate-400 flex justify-between">
-        <span>Risk Index: <strong id="risk-val" class="text-emerald-400">15/100</strong></span>
-        <span>Last Update: <strong id="last-time" class="text-slate-200">--:--:--</strong></span>
+        <span>Last Signal: <strong id="last-time" class="text-slate-200">--:--:--</strong></span>
       </div>
     </div>
   </div>
 
+  <!-- Real-Time Trend Graph -->
+  <div class="glass-card p-5 rounded-xl">
+    <h2 class="text-sm font-semibold text-slate-300 mb-4">Real-Time Power Output & Temperature Trend</h2>
+    <div class="h-60">
+      <canvas id="telemetryChart"></canvas>
+    </div>
+  </div>
+
   <script>
-    // WebSocket Client Setup
+    // -------------------------------------------------------------
+    // Three.js 3D Scene Initialization
+    // -------------------------------------------------------------
+    const container = document.getElementById('three-canvas');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020617);
+
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(20, 15, 25);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(10, 20, 10);
+    scene.add(dirLight);
+
+    // Plant Base
+    const baseGeo = new THREE.BoxGeometry(18, 0.5, 12);
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+    const base = new THREE.Mesh(baseGeo, baseMat);
+    scene.add(base);
+
+    // Turbine Cylinders
+    const turbineMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6, roughness: 0.3 });
+    const turbine1 = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 6, 32), turbineMat);
+    turbine1.rotation.z = Math.PI / 2;
+    turbine1.position.set(-4, 1.5, 0);
+    scene.add(turbine1);
+
+    const turbine2 = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 7, 32), turbineMat);
+    turbine2.rotation.z = Math.PI / 2;
+    turbine2.position.set(3, 1.8, 0);
+    scene.add(turbine2);
+
+    // Cooling Stack
+    const stackMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+    const stack = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.4, 10, 32), stackMat);
+    stack.position.set(0, 5, -3);
+    scene.add(stack);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // -------------------------------------------------------------
+    // WebSocket & Chart.js Integration
+    // -------------------------------------------------------------
     const ws = new WebSocket(`ws://${location.host}`);
     
-    // Chart.js Setup
     const ctx = document.getElementById('telemetryChart').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: [],
         datasets: [
-          { label: 'Power Output (PE MW)', data: [], borderColor: '#f59e0b', tension: 0.3, yAxisID: 'y' },
+          { label: 'Net Output (PE MW)', data: [], borderColor: '#f59e0b', tension: 0.3, yAxisID: 'y' },
           { label: 'Ambient Temp (AT °C)', data: [], borderColor: '#06b6d4', tension: 0.3, yAxisID: 'y1' }
         ]
       },
@@ -114,24 +207,30 @@
         if (data.AP) document.getElementById('val-ap').innerHTML = `${Number(data.AP).toFixed(2)} <span class="text-sm font-normal text-slate-400">mbar</span>`;
         if (data.RH) document.getElementById('val-rh').innerHTML = `${Number(data.RH).toFixed(2)} <span class="text-sm font-normal text-slate-400">%</span>`;
         if (data.PE) document.getElementById('val-pe').innerHTML = `${Number(data.PE).toFixed(2)} <span class="text-sm font-normal text-slate-400">MW</span>`;
-        if (data.efficiency) document.getElementById('val-eff').innerHTML = `${data.efficiency} <span class="text-sm font-normal text-slate-400">%</span>`;
+        if (data.efficiency) {
+          document.getElementById('val-eff').innerHTML = `${data.efficiency} <span class="text-sm font-normal text-slate-400">%</span>`;
+          document.getElementById('summary-eff').innerText = `${data.efficiency}%`;
+        }
 
         const badge = document.getElementById('status-badge');
         const riskVal = document.getElementById('risk-val');
+        const riskStatus = document.getElementById('risk-status');
+
         if (data.status === 'ELEVATED_MONITORING') {
           badge.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30";
           badge.innerText = "ELEVATED RISK";
           riskVal.className = "text-red-400";
+          if (riskStatus) riskStatus.innerText = "Elevated monitoring";
         } else {
           badge.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
           badge.innerText = "SYSTEM OPTIMAL";
           riskVal.className = "text-emerald-400";
+          if (riskStatus) riskStatus.innerText = "Optimal";
         }
 
         if (data.riskIndex) riskVal.innerText = `${data.riskIndex}/100`;
         if (data.timestamp) document.getElementById('last-time').innerText = data.timestamp;
 
-        // Render Alerts
         if (data.alerts && data.alerts.length > 0) {
           const container = document.getElementById('alerts-container');
           data.alerts.forEach(alertText => {
@@ -142,7 +241,6 @@
           });
         }
 
-        // Update Chart
         const label = data.timestamp || new Date().toLocaleTimeString();
         chart.data.labels.push(label);
         chart.data.datasets[0].data.push(data.PE || null);

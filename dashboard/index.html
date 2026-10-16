@@ -1,315 +1,162 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RefinAI — Combined-Cycle Plant Digital Twin | HP Power Lab 3.0</title>
-<link rel="stylesheet" href="styles.css" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RefinAI — CCPP 3D Digital Twin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; }
+    .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+  </style>
 </head>
-<body>
-<header class="topbar">
-  <div class="brand">
-    <span class="logo">&#9981;</span>
+<body class="p-6">
+  <!-- Header -->
+  <header class="flex justify-between items-center mb-6">
     <div>
-      <h1>RefinAI</h1>
-      <p>Instrumented CCPP digital twin &middot; measured-data replay</p>
+      <h1 class="text-2xl font-bold text-red-500 flex items-center gap-2">
+        <span>⛽</span> RefinAI Digital Twin
+      </h1>
+      <p class="text-xs text-slate-400">Instrumented CCPP digital twin — ROS 2 Live Telemetry</p>
+    </div>
+    <div id="status-badge" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+      SYSTEM OPTIMAL
+    </div>
+  </header>
+
+  <!-- Metric Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+    <div class="glass-card p-4 rounded-xl">
+      <p class="text-xs text-slate-400 font-semibold">AMBIENT TEMP</p>
+      <p id="val-at" class="text-2xl font-bold text-white mt-1">25.00 <span class="text-sm font-normal text-slate-400">°C</span></p>
+    </div>
+    <div class="glass-card p-4 rounded-xl">
+      <p class="text-xs text-slate-400 font-semibold">EXHAUST VACUUM</p>
+      <p id="val-v" class="text-2xl font-bold text-white mt-1">60.00 <span class="text-sm font-normal text-slate-400">cm Hg</span></p>
+    </div>
+    <div class="glass-card p-4 rounded-xl">
+      <p class="text-xs text-slate-400 font-semibold">PRESSURE</p>
+      <p id="val-ap" class="text-2xl font-bold text-white mt-1">1013.00 <span class="text-sm font-normal text-slate-400">mbar</span></p>
+    </div>
+    <div class="glass-card p-4 rounded-xl">
+      <p class="text-xs text-slate-400 font-semibold">HUMIDITY</p>
+      <p id="val-rh" class="text-2xl font-bold text-white mt-1">70.00 <span class="text-sm font-normal text-slate-400">%</span></p>
+    </div>
+    <div class="glass-card p-4 rounded-xl">
+      <p class="text-xs text-slate-400 font-semibold">NET OUTPUT</p>
+      <p id="val-pe" class="text-2xl font-bold text-amber-400 mt-1">440.00 <span class="text-sm font-normal text-slate-400">MW</span></p>
+    </div>
+    <div class="glass-card p-4 rounded-xl">
+      <p class="text-xs text-slate-400 font-semibold">EFFICIENCY</p>
+      <p id="val-eff" class="text-2xl font-bold text-cyan-400 mt-1">81.7 <span class="text-sm font-normal text-slate-400">%</span></p>
     </div>
   </div>
-  <div class="tabs">
-    <button class="tab active" data-tab="twin">3D Plant Twin</button>
-    <button class="tab" data-tab="replay">Sample Replay</button>
-    <button class="tab" data-tab="analytics">Data Analytics</button>
-    <button class="tab" data-tab="models">Model Validation</button>
-  </div>
-  <div class="status">
-    <span class="feed-state"><i class="dot"></i><span id="replay-state">LOADING HISTORICAL SAMPLES</span></span>
-  </div>
-</header>
 
-<main>
-  <aside class="prototype-notice">
-    <strong>Data provenance</strong>
-    <span id="source-status">Loading UCI Combined Cycle Power Plant held-out records. These are physical measurements, but the dataset has no timestamps and is shuffled; this is a historical sample replay, not live telemetry or HPCL data.</span>
-  </aside>
+  <!-- Main Workspace -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Chart & Stream Panel -->
+    <div class="lg:col-span-2 glass-card p-5 rounded-xl">
+      <h2 class="text-sm font-semibold text-slate-300 mb-4">Real-Time Power Output & Temperature Trend</h2>
+      <div class="h-64">
+        <canvas id="telemetryChart"></canvas>
+      </div>
+    </div>
 
-  <!-- Current measured sample -->
-  <section class="kpis">
-    <div class="card kpi">
-      <span class="kpi-label">Ambient Temperature</span>
-      <span class="kpi-value" id="kpi-at">--</span>
-      <span class="kpi-unit">AT-101 &middot; C</span>
-    </div>
-    <div class="card kpi">
-      <span class="kpi-label">Exhaust Vacuum</span>
-      <span class="kpi-value" id="kpi-vacuum">--</span>
-      <span class="kpi-unit">V-201 &middot; cm Hg</span>
-    </div>
-    <div class="card kpi">
-      <span class="kpi-label">Ambient Pressure</span>
-      <span class="kpi-value" id="kpi-pressure">--</span>
-      <span class="kpi-unit">AP-101 &middot; mbar</span>
-    </div>
-    <div class="card kpi">
-      <span class="kpi-label">Relative Humidity</span>
-      <span class="kpi-value" id="kpi-humidity">--</span>
-      <span class="kpi-unit">RH-101 &middot; %</span>
-    </div>
-    <div class="card kpi emphasis">
-      <span class="kpi-label">Measured Net Output</span>
-      <span class="kpi-value" id="kpi-output">--</span>
-      <span class="kpi-unit">PE-401 &middot; MW</span>
-    </div>
-    <div class="card kpi model-kpi">
-      <span class="kpi-label">Model Output Estimate</span>
-      <span class="kpi-value" id="kpi-estimate">--</span>
-      <span class="kpi-unit">AI-401 &middot; MW</span>
-    </div>
-  </section>
-
-  <section class="card system-overview">
-    <div class="overview-header">
+    <!-- Active Incident Logs -->
+    <div class="glass-card p-5 rounded-xl flex flex-col justify-between">
       <div>
-        <span class="eyebrow">OPERATING SUMMARY</span>
-        <h2>Control room overview</h2>
-      </div>
-      <span class="chip">Benchmark replay status</span>
-    </div>
-    <div class="overview-grid">
-      <article class="mini-card">
-        <span class="mini-label">Availability</span>
-        <strong id="status-availability">--</strong>
-        <small id="status-availability-note">Awaiting data</small>
-      </article>
-      <article class="mini-card emphasis">
-        <span class="mini-label">Efficiency</span>
-        <strong id="status-efficiency">--</strong>
-        <small id="status-efficiency-note">Benchmark delta</small>
-      </article>
-      <article class="mini-card">
-        <span class="mini-label">Risk index</span>
-        <strong id="status-risk">--</strong>
-        <small id="status-risk-note">Health watch</small>
-      </article>
-      <article class="mini-card">
-        <span class="mini-label">Output stability</span>
-        <strong id="status-stability">--</strong>
-        <small id="status-stability-note">Residual spread</small>
-      </article>
-    </div>
-  </section>
-
-  <!-- TAB 1: measured-data plant twin -->
-  <section class="tabpanel active" id="panel-twin">
-    <div class="grid twin-grid">
-      <div class="card panel" id="three-container">
-        <h2>Combined-Cycle Power Plant <small>(drag to rotate, scroll to zoom)</small></h2>
-        <canvas id="threeCanvas"></canvas>
-        <div class="scene-key">
-          <span><i class="key-steel"></i>Process equipment</span>
-          <span><i class="key-pipe"></i>Process piping</span>
-          <span><i class="key-tag"></i>Measured instrument</span>
-        </div>
-      </div>
-      <div class="card panel">
-        <div class="instrument-title">
-          <div><h2>Field Instruments</h2><p id="sample-id">Waiting for sample</p></div>
-          <span class="sample-counter" id="sample-position">-- / --</span>
-        </div>
-        <span class="residual-badge" id="residual-badge">Awaiting model comparison</span>
-        <div class="instruments" id="instruments"></div>
-      </div>
-    </div>
-    <div class="card panel process-summary">
-      <div><span class="eyebrow">PROCESS TRAIN</span><p>Air intake <b>&rarr;</b> gas turbine <b>&rarr;</b> heat-recovery steam generator <b>&rarr;</b> steam turbine <b>&rarr;</b> condenser and cooling loop</p></div>
-      <p class="info">Plant equipment is a detailed visual model. Instrument values come from the selected UCI sample; the dataset does not provide separate tags for every component.</p>
-    </div>
-    <div class="card panel event-panel">
-      <div class="event-head">
-        <h2>Operations event feed</h2>
-        <span class="chip subtle">Current replay window</span>
-      </div>
-      <ul class="event-list" id="event-stream"></ul>
-    </div>
-  </section>
-
-  <!-- TAB 2: historical replay -->
-  <section class="tabpanel" id="panel-replay">
-    <div class="card panel replay-controls">
-      <div class="replay-actions">
-        <button id="sample-back" type="button" aria-label="Previous sample">Previous</button>
-        <button id="play-toggle" type="button" aria-pressed="true">Pause</button>
-        <button id="sample-next" type="button" aria-label="Next sample">Next</button>
-      </div>
-      <input id="sample-seek" type="range" min="0" max="1913" value="0" aria-label="Select held-out sample" />
-      <span class="sample-counter" id="replay-position">Held-out record <span id="sample-position-replay">1 / 1,914</span></span>
-    </div>
-    <div class="grid charts">
-      <div class="card panel">
-        <h2>Measured vs Model-Estimated Net Output</h2>
-        <div class="chart-frame"><canvas id="outputChart"></canvas></div>
-      </div>
-      <div class="card panel">
-        <h2>Model Residual by Source Sample</h2>
-        <div class="chart-frame"><canvas id="residualChart"></canvas></div>
-      </div>
-    </div>
-    <div class="grid charts">
-      <div class="card panel">
-        <h2>Measured Output vs Ambient Temperature</h2>
-        <div class="chart-frame"><canvas id="relationshipChart"></canvas></div>
-      </div>
-      <div class="card panel sample-table-panel">
-        <h2>Selected Physical Record</h2>
-        <p class="info">The record ID points to the row in the included UCI data export. There is no timestamp; replay order is not a chronological operating trend.</p>
-        <div class="table-scroll"><table class="recs sample-table"><thead><tr><th>Source row</th><th>AT C</th><th>V cm Hg</th><th>AP mbar</th><th>RH %</th><th>Measured MW</th><th>Estimate MW</th><th>Residual MW</th></tr></thead><tbody><tr id="sample-row"><td colspan="8">Loading data</td></tr></tbody></table></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- TAB 3: Real-Data Analytics -->
-  <section class="tabpanel" id="panel-analytics">
-    <div class="card panel">
-      <h2>Dataset Provenance</h2>
-      <table class="recs" id="provenance">
-        <tr><th>Dataset</th><th>Source</th><th>Rows</th><th>Use</th></tr>
-        <tr><td>NASA C-MAPSS FD001</td><td><a href="https://ti.arc.nasa.gov/tech/dash/groups/pcoe/prognostic-data-repository/">NASA PCoE repository</a></td><td>20,631 train rows; 100 test engines</td><td>Simulated aircraft-engine RUL benchmark</td></tr>
-        <tr><td>UCI Combined Cycle Power Plant</td><td><a href="https://archive.ics.uci.edu/dataset/294/combined+cycle+power+plant">UCI ML Repository</a></td><td>9,568 measured records, 2006-2011</td><td>Real plant environmental inputs and net output; no timestamps</td></tr>
-      </table>
-      <p class="info provenance-note">The 3D scene is a reference combined-cycle plant model. UCI records are measured physical observations but shuffled and timestamp-free; NASA C-MAPSS is simulated aircraft-engine data. Neither is HPCL refinery data.</p>
-    </div>
-    <div class="grid charts">
-      <div class="card panel">
-        <h2>C-MAPSS: Sensor Degradation (5 engines)</h2>
-        <img class="ana-img" src="../ml/analytics/cmapss_degradation.png" alt="degradation" />
-      </div>
-      <div class="card panel">
-        <h2>C-MAPSS: Engine Lifetime Distribution</h2>
-        <img class="ana-img" src="../ml/analytics/cmapss_rul_dist.png" alt="RUL dist" />
-      </div>
-    </div>
-    <div class="grid charts">
-      <div class="card panel">
-        <h2>C-MAPSS: Sensor Correlation Matrix</h2>
-        <img class="ana-img" src="../ml/analytics/cmapss_corr_heatmap.png" alt="corr" />
-      </div>
-      <div class="card panel">
-        <h2>CCPP: Feature vs Energy Output</h2>
-        <img class="ana-img" src="../ml/analytics/ccpp_scatter.png" alt="scatter" />
-      </div>
-    </div>
-    <div class="card panel">
-      <h2>CCPP: Energy Output Distribution</h2>
-      <img class="ana-img" src="../ml/analytics/ccpp_pe_dist.png" alt="PE dist" />
-    </div>
-  </section>
-
-  <!-- TAB 4: ML Models -->
-  <section class="tabpanel" id="panel-models">
-    <div class="grid charts">
-      <div class="card panel">
-        <h2>RUL Prediction: Actual vs Predicted</h2>
-        <img class="ana-img" src="../ml/analytics/rul_results.png" alt="RUL results" />
-      </div>
-      <div class="card panel">
-        <h2>Energy Prediction: Actual vs Predicted</h2>
-        <img class="ana-img" src="../ml/analytics/energy_results.png" alt="energy results" />
-      </div>
-    </div>
-    <div class="card panel">
-      <h2>Public Benchmark Results</h2>
-      <table class="recs" id="model-metrics">
-        <tr><th>Task</th><th>Benchmark and test</th><th>Model</th><th>MAE</th><th>R2</th><th>Interpretation</th></tr>
-        <tr>
-          <td>Remaining useful life</td><td>NASA C-MAPSS FD001; official test, 100 engines</td>
-          <td>Gradient Boosting</td><td>12.16 cycles</td><td>0.811</td>
-          <td>Median baseline MAE: 38.01 cycles; RUL capped at 125</td>
-        </tr>
-        <tr>
-          <td>Power output</td><td>UCI CCPP; held-out 20% test, 1,914 rows</td>
-          <td>Gradient Boosting</td><td>2.220 MW</td><td>0.968</td>
-          <td>Predicts plant output; residuals are not measured energy waste</td>
-        </tr>
-        <tr>
-          <td>Unsupervised outlier flags</td><td>NASA C-MAPSS FD001; 100 test endpoints</td>
-          <td>Isolation Forest</td><td>--</td><td>--</td>
-          <td>Flagged 6 endpoints; no anomaly ground-truth labels</td>
-        </tr>
-      </table>
-      <p class="info provenance-note">RUL model selection uses an engine-held-out split; final RUL metrics use the dataset's official test labels. These benchmark scores are not validated refinery performance.</p>
-    </div>
-    <div class="grid charts">
-      <div class="card panel">
-        <h2>Asset health & anomaly score</h2>
-        <div class="units" id="asset-health"></div>
-      </div>
-      <div class="card panel">
-        <h2>Recommended actions</h2>
-        <ul class="alerts" id="action-list"></ul>
-      </div>
-    </div>
-    <div class="grid charts">
-      <div class="card panel">
-        <h2>What-if performance scenario</h2>
-        <div class="scenario-controls">
-          <label>
-            <span>Ambient temp change</span>
-            <input id="scenario-temp" type="range" min="-10" max="20" value="5" />
-            <strong id="scenario-temp-value">+5°C</strong>
-          </label>
-          <label>
-            <span>Vacuum delta</span>
-            <input id="scenario-vacuum" type="range" min="-15" max="15" value="-4" />
-            <strong id="scenario-vacuum-value">-4 cm Hg</strong>
-          </label>
-          <label>
-            <span>Maintenance priority</span>
-            <input id="scenario-maint" type="range" min="0" max="100" value="55" />
-            <strong id="scenario-maint-value">55 / 100</strong>
-          </label>
-        </div>
-        <div class="scenario-output">
-          <div><span>Predicted output</span><strong id="scenario-output">-- MW</strong></div>
-          <div><span>Risk index</span><strong id="scenario-risk">--</strong></div>
-          <div><span>Estimated energy impact</span><strong id="scenario-energy">--</strong></div>
-        </div>
-      </div>
-      <div class="card panel">
-        <h2>ROI impact & value gain</h2>
-        <div class="roi-grid">
-          <div class="roi-card">
-            <span>Energy saved</span>
-            <strong id="roi-energy">--</strong>
-          </div>
-          <div class="roi-card">
-            <span>Maintenance avoided</span>
-            <strong id="roi-maint">--</strong>
-          </div>
-          <div class="roi-card">
-            <span>Output uplift</span>
-            <strong id="roi-uplift">--</strong>
-          </div>
-          <div class="roi-card highlight">
-            <span>Annual value</span>
-            <strong id="roi-total">--</strong>
+        <h2 class="text-sm font-semibold text-slate-300 mb-3">Live Anomaly & Incident Stream</h2>
+        <div id="alerts-container" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+          <div class="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700 text-xs text-slate-300">
+            [System initialized] Connected to WebSocket telemetry stream.
           </div>
         </div>
       </div>
+      <div class="mt-4 pt-4 border-t border-slate-700/60 text-xs text-slate-400 flex justify-between">
+        <span>Risk Index: <strong id="risk-val" class="text-emerald-400">15/100</strong></span>
+        <span>Last Update: <strong id="last-time" class="text-slate-200">--:--:--</strong></span>
+      </div>
     </div>
-    <div class="card panel">
-      <h2>Innovation Catalog Summary</h2>
-      <p class="info">The wider ideation catalog is exploratory. This prototype focuses on a proposed refinery efficiency and maintenance decision-support pilot; each opportunity needs validation against the chosen HPCL business track and challenge video.</p>
-    </div>
-  </section>
-</main>
+  </div>
 
-<footer>
-  RefinAI | HP Power Lab 3.0 | CCPP physical-measurement replay + instrumented plant model | Student prototype
-</footer>
+  <script>
+    // WebSocket Client Setup
+    const ws = new WebSocket(`ws://${location.host}`);
+    
+    // Chart.js Setup
+    const ctx = document.getElementById('telemetryChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'Power Output (PE MW)', data: [], borderColor: '#f59e0b', tension: 0.3, yAxisID: 'y' },
+          { label: 'Ambient Temp (AT °C)', data: [], borderColor: '#06b6d4', tension: 0.3, yAxisID: 'y1' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { position: 'left', grid: { color: 'rgba(255,255,255,0.05)' } },
+          y1: { position: 'right', grid: { drawOnChartArea: false } }
+        }
+      }
+    });
 
-<script src="data.js"></script>
-<script src="app.js"></script>
-<script type="module" src="twin3d.js"></script>
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.AT) document.getElementById('val-at').innerHTML = `${Number(data.AT).toFixed(2)} <span class="text-sm font-normal text-slate-400">°C</span>`;
+        if (data.V) document.getElementById('val-v').innerHTML = `${Number(data.V).toFixed(2)} <span class="text-sm font-normal text-slate-400">cm Hg</span>`;
+        if (data.AP) document.getElementById('val-ap').innerHTML = `${Number(data.AP).toFixed(2)} <span class="text-sm font-normal text-slate-400">mbar</span>`;
+        if (data.RH) document.getElementById('val-rh').innerHTML = `${Number(data.RH).toFixed(2)} <span class="text-sm font-normal text-slate-400">%</span>`;
+        if (data.PE) document.getElementById('val-pe').innerHTML = `${Number(data.PE).toFixed(2)} <span class="text-sm font-normal text-slate-400">MW</span>`;
+        if (data.efficiency) document.getElementById('val-eff').innerHTML = `${data.efficiency} <span class="text-sm font-normal text-slate-400">%</span>`;
+
+        const badge = document.getElementById('status-badge');
+        const riskVal = document.getElementById('risk-val');
+        if (data.status === 'ELEVATED_MONITORING') {
+          badge.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30";
+          badge.innerText = "ELEVATED RISK";
+          riskVal.className = "text-red-400";
+        } else {
+          badge.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+          badge.innerText = "SYSTEM OPTIMAL";
+          riskVal.className = "text-emerald-400";
+        }
+
+        if (data.riskIndex) riskVal.innerText = `${data.riskIndex}/100`;
+        if (data.timestamp) document.getElementById('last-time').innerText = data.timestamp;
+
+        // Render Alerts
+        if (data.alerts && data.alerts.length > 0) {
+          const container = document.getElementById('alerts-container');
+          data.alerts.forEach(alertText => {
+            const el = document.createElement('div');
+            el.className = "p-2.5 rounded-lg bg-red-950/60 border border-red-800/80 text-xs text-red-300 font-medium";
+            el.innerText = `[${data.timestamp || 'ALERT'}] ${alertText}`;
+            container.prepend(el);
+          });
+        }
+
+        // Update Chart
+        const label = data.timestamp || new Date().toLocaleTimeString();
+        chart.data.labels.push(label);
+        chart.data.datasets[0].data.push(data.PE || null);
+        chart.data.datasets[1].data.push(data.AT || null);
+        if (chart.data.labels.length > 15) {
+          chart.data.labels.shift();
+          chart.data.datasets[0].data.shift();
+          chart.data.datasets[1].data.shift();
+        }
+        chart.update();
+      } catch (e) {
+        console.error("Payload parse error:", e);
+      }
+    };
+  </script>
 </body>
 </html>

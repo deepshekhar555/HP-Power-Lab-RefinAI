@@ -9,7 +9,6 @@ const wss = new WebSocket.Server({ server });
 
 const PORT = process.env.PORT || 3000;
 
-// Operational Safe Thresholds
 const THRESHOLDS = {
   MAX_AT: 32.0,   // Max Ambient Temperature (°C)
   MIN_PE: 410.0,  // Min Net Power Output (MW)
@@ -19,46 +18,47 @@ const THRESHOLDS = {
 app.use(express.static(path.join(__dirname, 'dashboard')));
 app.use('/docs', express.static(path.join(__dirname, 'docs')));
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'HEALTHY', project: 'RefinAI', region: 'ap-south-1' });
 });
 
-// WebSocket stream processing & alert relay
 wss.on('connection', (ws) => {
-  console.log('[RefinAI] WebSocket client connected');
+  console.log('[RefinAI] Client connected to live WebSocket relay');
 
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message.toString());
       
-      // Calculate risk index & trigger alerts if telemetry exceeds limits
       let alerts = [];
       if (data.AT && data.AT > THRESHOLDS.MAX_AT) {
-        alerts.push(`CRITICAL: Ambient Temp high (${data.AT}°C)`);
+        alerts.push(`CRITICAL: High Ambient Temp (${data.AT}°C)`);
       }
       if (data.PE && data.PE < THRESHOLDS.MIN_PE) {
-        alerts.push(`WARNING: Low power output yield (${data.PE} MW)`);
+        alerts.push(`WARNING: Low Electrical Yield (${data.PE} MW)`);
       }
       if (data.V && data.V > THRESHOLDS.MAX_V) {
-        alerts.push(`CRITICAL: High exhaust vacuum pressure (${data.V} cm Hg)`);
+        alerts.push(`CRITICAL: Exhaust Vacuum Pressure High (${data.V} cm Hg)`);
       }
+
+      // Compute theoretical yield & efficiency
+      const maxPossiblePe = 480.0 - (1.8 * (data.AT || 25.0));
+      const efficiency = data.PE ? ((data.PE / maxPossiblePe) * 100).toFixed(1) : 81.7;
 
       const enrichedPayload = JSON.stringify({
         ...data,
+        efficiency: efficiency,
         riskIndex: alerts.length > 0 ? 85 : 15,
         status: alerts.length > 0 ? 'ELEVATED_MONITORING' : 'OPTIMAL',
-        alerts: alerts
+        alerts: alerts,
+        timestamp: new Date().toLocaleTimeString()
       });
 
-      // Broadcast payload to all connected dashboard frontend clients
       wss.clients.forEach((client) => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(enrichedPayload);
         }
       });
     } catch (e) {
-      // Fallback plain string passthrough
       wss.clients.forEach((client) => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
           client.send(message.toString());
@@ -69,5 +69,5 @@ wss.on('connection', (ws) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`[RefinAI Server] Running on http://localhost:${PORT}`);
+  console.log(`[RefinAI Server] Running on http://localhost:3000`);
 });

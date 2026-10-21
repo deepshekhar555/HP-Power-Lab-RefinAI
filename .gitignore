@@ -1,0 +1,33 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+.pytest_cache/
+
+# Node / front-end
+node_modules/
+.npm/
+.npmrc
+
+# Logs
+*.log
+logs/
+
+# Local environment
+.env.local
+.env.*.local
+
+# Build / generated runtime
+dist/
+build/
+coverage/

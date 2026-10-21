@@ -23,6 +23,8 @@ from sklearn.ensemble import (
 )
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.inspection import permutation_importance
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 import matplotlib
@@ -191,20 +193,93 @@ def train_energy():
     train_indices, test_indices = train_test_split(
         np.arange(len(df)), test_size=0.2, random_state=42
     )
-    Xtr, Xte = X[train_indices], X[test_indices]
-    ytr, yte = y[train_indices], y[test_indices]
-    scaler = StandardScaler().fit(Xtr)
-    Xtr = scaler.transform(Xtr)
+    fit_indices, calibration_indices = train_test_split(
+        train_indices, test_size=0.2, random_state=43
+    )
+    Xfit, Xcal, Xte = X[fit_indices], X[calibration_indices], X[test_indices]
+    yfit, ycal, yte = y[fit_indices], y[calibration_indices], y[test_indices]
+    scaler = StandardScaler().fit(Xfit)
+    Xfit = scaler.transform(Xfit)
+    Xcal = scaler.transform(Xcal)
     Xte = scaler.transform(Xte)
 
+    feature_names = ["AT", "V", "AP", "RH"]
+    pca = PCA().fit(Xfit)
+    component_count = int(np.searchsorted(np.cumsum(pca.explained_variance_ratio_), 0.95) + 1)
+    loadings = pca.components_[:component_count].T
+    eigenvalues = pca.explained_variance_[:component_count]
+
+    def process_monitor_scores(features):
+        scores = pca.transform(features)[:, :component_count]
+        t2_feature_contributions = (
+            (scores ** 2 / eigenvalues)[:, np.newaxis, :] * (loadings ** 2)[np.newaxis, :, :]
+        ).sum(axis=2)
+        reconstruction = pca.mean_ + scores @ pca.components_[:component_count]
+        q_feature_contributions = (features - reconstruction) ** 2
+        return (
+            t2_feature_contributions.sum(axis=1),
+            q_feature_contributions.sum(axis=1),
+            t2_feature_contributions,
+            q_feature_contributions,
+        )
+
+    calibration_t2, calibration_q, _, _ = process_monitor_scores(Xcal)
+    test_t2, test_q, test_t2_contributions, test_q_contributions = process_monitor_scores(Xte)
+    monitor_tail_rate = 0.01
+    t2_rank = min(len(calibration_t2), int(np.ceil((len(calibration_t2) + 1) * (1 - monitor_tail_rate))))
+    q_rank = min(len(calibration_q), int(np.ceil((len(calibration_q) + 1) * (1 - monitor_tail_rate))))
+    t2_threshold = float(np.sort(calibration_t2)[t2_rank - 1])
+    q_threshold = float(np.sort(calibration_q)[q_rank - 1])
+    t2_flags = test_t2 > t2_threshold
+    q_flags = test_q > q_threshold
+
     gb = GradientBoostingRegressor(n_estimators=400, max_depth=5, learning_rate=0.08, random_state=42)
-    gb.fit(Xtr, ytr)
+    gb.fit(Xfit, yfit)
+    calibration_residuals = np.abs(ycal - gb.predict(Xcal))
+    interval_coverage = 0.9
+    interval_rank = min(
+        len(calibration_residuals),
+        int(np.ceil((len(calibration_residuals) + 1) * interval_coverage)),
+    )
+    interval_radius = float(np.sort(calibration_residuals)[interval_rank - 1])
     pred = gb.predict(Xte)
+    permutation = permutation_importance(
+        gb,
+        Xte,
+        yte,
+        scoring="neg_mean_absolute_error",
+        n_repeats=15,
+        random_state=42,
+        n_jobs=1,
+    )
+    permutation_order = np.argsort(permutation.importances_mean)
+    permutation_results = [
+        {
+            "feature": feature_names[index],
+            "mean_mae_increase_mw": round(float(permutation.importances_mean[index]), 4),
+            "std_mae_increase_mw": round(float(permutation.importances_std[index]), 4),
+        }
+        for index in permutation_order
+    ]
+    lower = pred - interval_radius
+    upper = pred + interval_radius
     mae = mean_absolute_error(yte, pred)
     rmse = np.sqrt(mean_squared_error(yte, pred))
     r2 = r2_score(yte, pred)
+    interval_test_coverage = float(np.mean((yte >= lower) & (yte <= upper)))
+    input_ranges = {
+        feature: {
+            "lower": float(np.percentile(X[fit_indices, index], 1)),
+            "upper": float(np.percentile(X[fit_indices, index], 99)),
+        }
+        for index, feature in enumerate(feature_names)
+    }
 
     print(f"  GradBoosting -> MAE={mae:.3f} MW  RMSE={rmse:.3f} MW  R2={r2:.5f}")
+    print(
+        f"  Split-conformal 90% interval radius={interval_radius:.3f} MW; "
+        f"test coverage={interval_test_coverage:.3f}"
+    )
 
     joblib.dump(gb, os.path.join(MODEL, "energy_ccpp.pkl"))
     joblib.dump(scaler, os.path.join(MODEL, "energy_ccpp_scaler.pkl"))
@@ -218,6 +293,33 @@ def train_energy():
         "rows": len(df),
         "test_rows": int(len(yte)),
         "evaluation": "Held-out 20% test split; random_state=42",
+        "prediction_interval": {
+            "method": "Split conformal, absolute residual score",
+            "nominal_coverage": interval_coverage,
+            "calibration_rows": int(len(ycal)),
+            "half_width_MW": round(interval_radius, 4),
+            "test_coverage": round(interval_test_coverage, 4),
+            "note": "Empirical CCPP benchmark diagnostic; coverage is not guaranteed under distribution shift or on refinery data",
+        },
+        "permutation_importance": {
+            "method": "Held-out permutation importance; change in MAE after independently shuffling one input",
+            "repeats": 15,
+            "features": permutation_results,
+            "note": "Predictive reliance, not causal effect. Correlated inputs can share or mask importance; shuffling can create unrealistic combinations.",
+        },
+        "input_reference_ranges": input_ranges,
+        "process_monitoring": {
+            "method": "PCA multivariate statistical monitoring with Hotelling T-squared and Q residual statistics",
+            "retained_components": component_count,
+            "explained_variance": round(float(np.sum(pca.explained_variance_ratio_[:component_count])), 4),
+            "calibration_rows": int(len(ycal)),
+            "nominal_tail_rate": monitor_tail_rate,
+            "t2_reference_threshold": round(t2_threshold, 4),
+            "q_reference_threshold": round(q_threshold, 4),
+            "test_t2_flag_rate": round(float(np.mean(t2_flags)), 4),
+            "test_q_flag_rate": round(float(np.mean(q_flags)), 4),
+            "note": "Unlabeled benchmark statistical outlier screen only; not a fault detector, and calibration may not hold under distribution shift",
+        },
     }
 
     # A negative test residual is a model discrepancy, not verified energy waste.
@@ -231,6 +333,30 @@ def train_energy():
     replay.insert(0, "sample_id", [int(index + 1) for index in test_indices])
     replay["PE_pred"] = pred
     replay["residual_MW"] = residual
+    replay["prediction_lower_MW"] = lower
+    replay["prediction_upper_MW"] = upper
+    input_names = feature_names
+    replay["outside_reference_features"] = [
+        [
+            feature
+            for feature, value in zip(input_names, row)
+            if value < input_ranges[feature]["lower"]
+            or value > input_ranges[feature]["upper"]
+        ]
+        for row in X[test_indices]
+    ]
+    replay["t2_score"] = test_t2
+    replay["q_residual_score"] = test_q
+    replay["t2_reference_flag"] = t2_flags
+    replay["q_reference_flag"] = q_flags
+    replay["t2_top_feature"] = [
+        feature_names[index] for index in np.argmax(test_t2_contributions, axis=1)
+    ]
+    replay["t2_top_contribution"] = np.max(test_t2_contributions, axis=1)
+    replay["q_top_feature"] = [
+        feature_names[index] for index in np.argmax(test_q_contributions, axis=1)
+    ]
+    replay["q_top_contribution"] = np.max(test_q_contributions, axis=1)
     replay_payload = {
         "source": "UCI Combined Cycle Power Plant dataset",
         "source_url": "https://archive.ics.uci.edu/dataset/294/combined+cycle+power+plant",
@@ -245,7 +371,21 @@ def train_energy():
             "PE": "Measured net electrical output (MW)",
             "PE_pred": "Gradient Boosting model estimate (MW)",
             "residual_MW": "Measured output minus model estimate (MW)",
+            "prediction_lower_MW": "Lower bound of the split-conformal 90% benchmark interval (MW)",
+            "prediction_upper_MW": "Upper bound of the split-conformal 90% benchmark interval (MW)",
+            "outside_reference_features": "Inputs outside the model-fit 1st-99th percentile reference range",
+            "t2_score": "PCA Hotelling T-squared score in retained principal-component subspace",
+            "q_residual_score": "Squared PCA reconstruction residual outside retained subspace",
+            "t2_reference_flag": "Score exceeds the calibration-set 99th percentile reference threshold",
+            "q_reference_flag": "Score exceeds the calibration-set 99th percentile reference threshold",
+            "t2_top_feature": "Largest proportional input contribution to T-squared score",
+            "t2_top_contribution": "Largest proportional input contribution to T-squared score",
+            "q_top_feature": "Input with largest squared PCA reconstruction residual",
+            "q_top_contribution": "Largest squared PCA reconstruction residual contribution",
         },
+        "prediction_interval": metrics["Energy"]["prediction_interval"],
+        "input_reference_ranges": input_ranges,
+        "process_monitoring": metrics["Energy"]["process_monitoring"],
         "samples": replay.round(4).to_dict(orient="records"),
     }
     with open(REPLAY_OUT, "w", encoding="utf-8") as f:
@@ -268,6 +408,20 @@ def train_energy():
     fig.savefig(os.path.join(ANALYTICS, "energy_results.png"))
     plt.close(fig)
     print("  -> saved energy_results.png\n")
+
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    importance_values = permutation.importances_mean[permutation_order]
+    importance_errors = permutation.importances_std[permutation_order]
+    ax.barh(np.asarray(feature_names)[permutation_order],
+            importance_values, xerr=importance_errors, color="#35a79c", capsize=3)
+    ax.axvline(0, color="#555555", linewidth=0.8)
+    ax.set_xlabel("Increase in held-out MAE when shuffled (MW)")
+    ax.set_title("CCPP held-out permutation importance")
+    ax.grid(axis="x", alpha=0.22)
+    fig.tight_layout()
+    fig.savefig(os.path.join(ANALYTICS, "ccpp_permutation_importance.png"))
+    plt.close(fig)
+    print("  -> saved ccpp_permutation_importance.png\n")
 
 
 # ════════════════════════════════════════════════════════════

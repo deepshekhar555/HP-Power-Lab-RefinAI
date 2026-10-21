@@ -3,29 +3,33 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RefinAI — Combined-Cycle Plant Digital Twin | HP Power Lab 3.0</title>
+<title>RefinAI — Combined-Cycle Benchmark Replay | HP Power Lab 3.0</title>
 <link rel="stylesheet" href="styles.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}</script>
 </head>
 <body>
-<header class="topbar">
+<header class="topbar" data-active-tab="twin">
   <div class="brand">
     <span class="logo">&#9981;</span>
     <div>
       <h1>RefinAI</h1>
-      <p>Instrumented CCPP digital twin &middot; measured-data replay</p>
+      <p>Public benchmark replay &middot; illustrative decision-support prototype</p>
     </div>
   </div>
   <div class="tabs">
-    <button class="tab active" data-tab="twin">3D Plant Twin</button>
+    <button class="tab active" data-tab="twin">Control Room</button>
     <button class="tab" data-tab="replay">Sample Replay</button>
-    <button class="tab" data-tab="analytics">Data Analytics</button>
-    <button class="tab" data-tab="models">Model Validation</button>
+    <button class="tab" data-tab="analytics">Energy Logic</button>
+    <button class="tab" data-tab="models">Decision Board</button>
+    <button class="tab" data-tab="camera">Camera Monitor</button>
+    <button class="tab" data-tab="modules">Process Modules</button>
+    <button class="tab" data-tab="hardware-lab">Hardware Lab</button>
   </div>
   <div class="status">
     <span class="feed-state"><i class="dot"></i><span id="replay-state">LOADING HISTORICAL SAMPLES</span></span>
   </div>
+  <div class="module-tabs" id="module-tabs" role="tablist" aria-label="45 additional process modules"></div>
 </header>
 
 <main>
@@ -37,32 +41,32 @@
   <!-- Current measured sample -->
   <section class="kpis">
     <div class="card kpi">
-      <span class="kpi-label">Ambient Temperature</span>
+      <span class="kpi-label">Inlet Air Temperature</span>
       <span class="kpi-value" id="kpi-at">--</span>
       <span class="kpi-unit">AT-101 &middot; C</span>
     </div>
     <div class="card kpi">
-      <span class="kpi-label">Exhaust Vacuum</span>
+      <span class="kpi-label">Condenser Vacuum</span>
       <span class="kpi-value" id="kpi-vacuum">--</span>
       <span class="kpi-unit">V-201 &middot; cm Hg</span>
     </div>
     <div class="card kpi">
-      <span class="kpi-label">Ambient Pressure</span>
+      <span class="kpi-label">Combustion Air Pressure</span>
       <span class="kpi-value" id="kpi-pressure">--</span>
       <span class="kpi-unit">AP-101 &middot; mbar</span>
     </div>
     <div class="card kpi">
-      <span class="kpi-label">Relative Humidity</span>
+      <span class="kpi-label">Intake Moisture</span>
       <span class="kpi-value" id="kpi-humidity">--</span>
       <span class="kpi-unit">RH-101 &middot; %</span>
     </div>
     <div class="card kpi emphasis">
-      <span class="kpi-label">Measured Net Output</span>
+      <span class="kpi-label">Measured Power Output</span>
       <span class="kpi-value" id="kpi-output">--</span>
       <span class="kpi-unit">PE-401 &middot; MW</span>
     </div>
     <div class="card kpi model-kpi">
-      <span class="kpi-label">Model Output Estimate</span>
+      <span class="kpi-label">Model Estimate Output</span>
       <span class="kpi-value" id="kpi-estimate">--</span>
       <span class="kpi-unit">AI-401 &middot; MW</span>
     </div>
@@ -71,31 +75,63 @@
   <section class="card system-overview">
     <div class="overview-header">
       <div>
-        <span class="eyebrow">OPERATING SUMMARY</span>
-        <h2>Control room overview</h2>
+        <span class="eyebrow">BENCHMARK STATUS · HISTORICAL REPLAY</span>
+        <h2>What the current evidence shows</h2>
       </div>
       <span class="chip">Benchmark replay status</span>
     </div>
     <div class="overview-grid">
       <article class="mini-card">
-        <span class="mini-label">Availability</span>
-        <strong id="status-availability">--</strong>
-        <small id="status-availability-note">Awaiting data</small>
+        <span class="mini-label">Held-out records</span>
+        <strong id="status-samples">--</strong>
+        <small id="status-samples-note">Loading benchmark split</small>
       </article>
       <article class="mini-card emphasis">
-        <span class="mini-label">Efficiency</span>
-        <strong id="status-efficiency">--</strong>
-        <small id="status-efficiency-note">Benchmark delta</small>
+        <span class="mini-label">Current sample residual</span>
+        <strong id="status-residual">--</strong>
+        <small id="status-residual-note">Measured minus estimate</small>
       </article>
       <article class="mini-card">
-        <span class="mini-label">Risk index</span>
-        <strong id="status-risk">--</strong>
-        <small id="status-risk-note">Health watch</small>
+        <span class="mini-label">Held-out test MAE</span>
+        <strong id="status-mae">--</strong>
+        <small id="status-mae-note">Benchmark score, not a limit</small>
       </article>
       <article class="mini-card">
-        <span class="mini-label">Output stability</span>
-        <strong id="status-stability">--</strong>
-        <small id="status-stability-note">Residual spread</small>
+        <span class="mini-label">Held-out test R²</span>
+        <strong id="status-r2">--</strong>
+        <small id="status-r2-note">UCI model score, not refinery validation</small>
+      </article>
+    </div>
+  </section>
+
+  <section class="card win-summary">
+    <div class="overview-header">
+      <div>
+        <span class="eyebrow">FLAGSHIP WORKFLOW · PROPOSED HPCL PILOT</span>
+        <h2>From output deviation to operator review</h2>
+      </div>
+      <span class="chip subtle">Read-only · human-reviewed · not deployed</span>
+    </div>
+    <div class="win-grid">
+      <article class="win-card">
+        <span>01 · BASELINE</span>
+        <h3>Understand the operating context</h3>
+        <p>Replay measured UCI power-plant records with ambient temperature, vacuum, pressure, humidity, and output.</p>
+      </article>
+      <article class="win-card">
+        <span>02 · ESTIMATE</span>
+        <h3>Compare measured with expected output</h3>
+        <p>A Gradient Boosting model predicts output from process conditions; the held-out benchmark MAE is 2.262 MW.</p>
+      </article>
+      <article class="win-card">
+        <span>03 · REVIEW</span>
+        <h3>Surface deviations for investigation</h3>
+        <p>Show the residual beside the benchmark score so an engineer can review evidence; a deviation is not a confirmed fault.</p>
+      </article>
+      <article class="win-card">
+        <span>04 · PILOT GATE</span>
+        <h3>Validate on approved unit data</h3>
+        <p>Next step: read-only shadow mode with an HPCL-approved historian export, operator feedback, and measured outcomes.</p>
       </article>
     </div>
   </section>
@@ -134,6 +170,683 @@
     </div>
   </section>
 
+  <section class="tabpanel" id="panel-camera">
+    <div class="camera-layout">
+      <section class="card panel camera-view-panel">
+        <div class="camera-heading">
+          <div>
+            <span class="eyebrow">LOCAL HARDWARE FEED</span>
+            <h2>Refinery Quality Inspector</h2>
+          </div>
+          <span class="camera-status" id="camera-status" aria-live="polite">Camera disconnected</span>
+        </div>
+        <div class="camera-stage">
+          <video id="camera-video" autoplay muted playsinline></video>
+          <div class="camera-empty" id="camera-empty">No camera feed</div>
+          <div class="instrument-frame-guide" aria-hidden="true"><span>Center sample / sight line here</span></div>
+        </div>
+        <div class="camera-controls">
+          <label for="camera-device">Input device</label>
+          <select id="camera-device" aria-label="Camera input device">
+            <option value="">Default camera</option>
+          </select>
+          <button id="camera-start" type="button">Start camera</button>
+          <button id="quality-reference" type="button" disabled>Set reference</button>
+          <button id="quality-analyze" type="button" disabled>Analyze image</button>
+          <button id="camera-stop" type="button" disabled>Stop</button>
+          <button id="camera-snapshot" type="button" disabled>Save frame</button>
+        </div>
+        <div class="camera-metrics">
+          <div><span>Source</span><strong id="camera-source">Not connected</strong></div>
+          <div><span>Resolution</span><strong id="camera-resolution">--</strong></div>
+          <div><span>Frame rate</span><strong id="camera-fps">--</strong></div>
+        </div>
+        <div class="quality-inspector">
+          <div class="quality-modes" role="group" aria-label="Choose sample medium">
+            <button class="quality-mode active" data-medium="air" aria-pressed="true">Air</button>
+            <button class="quality-mode" data-medium="water" aria-pressed="false">Water</button>
+            <button class="quality-mode" data-medium="oil" aria-pressed="false">Oil</button>
+            <button class="quality-mode" data-medium="gas" aria-pressed="false">Gas</button>
+          </div>
+          <div class="quality-explanation">
+            <span class="eyebrow" id="quality-mode-kicker">AIR · VISUAL PROXY</span>
+            <p class="info" id="quality-mode-description">A standard camera can compare visible haze/contrast only under fixed lighting. It cannot measure PM2.5, CO2, or invisible contaminants.</p>
+            <p class="info quality-required"><strong>For a real reading:</strong> <span id="quality-sensor-requirement">PM2.5/PM10 particle sensor, NDIR CO2 sensor, and species-specific gas sensors.</span></p>
+          </div>
+          <div class="quality-results">
+            <div><span>Image brightness</span><strong id="quality-brightness">--</strong></div>
+            <div><span>Color saturation</span><strong id="quality-saturation">--</strong></div>
+            <div><span>Image contrast</span><strong id="quality-contrast">--</strong></div>
+          </div>
+          <div class="quality-outcome" id="quality-outcome" aria-live="polite">No image analysis yet. Set a reference using the same camera position and lighting.</div>
+          <p class="info quality-disclaimer">These are image metrics, not laboratory or safety measurements. Visual differences can come from lighting, camera exposure, sample container, or movement.</p>
+        </div>
+      </section>
+      <aside class="card panel camera-boundary">
+        <span class="eyebrow">DEVICE BOUNDARY</span>
+        <h2>What this feed can show</h2>
+        <p class="info">Camera analysis is performed locally on a frame crop; frames are not uploaded. Air/Water/Oil modes compare optical properties only against a reference captured with identical framing and illumination.</p>
+        <p class="info camera-limit">RGB cameras cannot measure gas composition, invisible leaks, pH, viscosity, or certified contaminant levels. Gas needs species-specific detectors or a gas chromatograph; water needs pH/turbidity/conductivity probes; oil needs viscosity, water-content, and particle instruments.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="tabpanel" id="panel-hardware-lab">
+    <section class="card panel hardware-intro">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">DIGITAL TWIN LAB · REAL-WORLD CONNECTION MODEL</span>
+          <h2>HPCL hardware and sensor network simulation</h2>
+        </div>
+        <span class="chip subtle">System view · not live hardware</span>
+      </div>
+      <p class="info">This tab shows an end-to-end hardware connection model for the full candidate instrumentation set. The goal is to understand how air, water, oil, gas, and process sensors connect to transmitters, data acquisition, gateways, signal conditioning, and the read-only dashboard. It is a teaching and engineering illustration, not a live plant or a verified field installation.</p>
+      <p class="info">Every connection, switch, cable, power rail, transmitter, and signal path below is simulated. The user can see how the components are logically linked and how a read-only gateway can fail or stay online. This is a meaningful operational mock-up that helps a viewer understand the architecture without implying a physical refinery deployment.</p>
+    </section>
+
+    <section class="card panel refinery-sim-panel">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">PHYSICAL REFINING FLOW · DEMO-ONLY PROCESS TWIN</span>
+          <h2>How air, water, gas, and oil are represented in the simulated refinery</h2>
+        </div>
+        <span class="chip subtle" id="refinery-flow-status">Waiting for simulated process</span>
+      </div>
+      <div class="refinery-flow-rail" aria-label="Simulated refining process flow by medium">
+        <div class="refinery-stage refinery-stage-air" data-refinery-stage="air">
+          <span class="refinery-stage-tag">AIR</span>
+          <strong>Intake → blower → filter → treated air</strong>
+          <div class="refinery-meter"><span id="refinery-air-meter"></span></div>
+          <small id="refinery-air-flow">-- Nm³/h</small>
+        </div>
+        <div class="refinery-arrow">→</div>
+        <div class="refinery-stage refinery-stage-water" data-refinery-stage="water">
+          <span class="refinery-stage-tag">WATER</span>
+          <strong>Tank → pump → media filter → treated water</strong>
+          <div class="refinery-meter"><span id="refinery-water-meter"></span></div>
+          <small id="refinery-water-flow">-- m³/h</small>
+        </div>
+        <div class="refinery-arrow">→</div>
+        <div class="refinery-stage refinery-stage-gas" data-refinery-stage="gas">
+          <span class="refinery-stage-tag">GAS</span>
+          <strong>Separator → scrubber → cooler → conditioned gas</strong>
+          <div class="refinery-meter"><span id="refinery-gas-meter"></span></div>
+          <small id="refinery-gas-flow">-- Nm³/h</small>
+        </div>
+        <div class="refinery-arrow">→</div>
+        <div class="refinery-stage refinery-stage-oil" data-refinery-stage="oil">
+          <span class="refinery-stage-tag">OIL</span>
+          <strong>Feed tank → pump → filter → heat exchanger</strong>
+          <div class="refinery-meter"><span id="refinery-oil-meter"></span></div>
+          <small id="refinery-oil-flow">-- m³/h</small>
+        </div>
+      </div>
+      <div class="refinery-grid">
+        <article class="refinery-card" data-medium="air">
+          <div class="refinery-card-head">
+            <span>Air treatment</span>
+            <strong id="refinery-air-status">Normal</strong>
+          </div>
+          <ul>
+            <li>Intake air</li>
+            <li>Blower load</li>
+            <li>Filter / carbon stage</li>
+            <li>Treated air stack</li>
+          </ul>
+          <div class="refinery-metric"><span>Flow</span><strong id="refinery-air-flow-metric">-- Nm³/h</strong></div>
+          <div class="refinery-metric"><span>PM2.5</span><strong id="refinery-air-pm25">-- µg/m³</strong></div>
+          <div class="refinery-metric"><span>PM10</span><strong id="refinery-air-pm10">-- µg/m³</strong></div>
+          <div class="refinery-metric"><span>CO₂ / VOC</span><strong id="refinery-air-composition">-- / --</strong></div>
+        </article>
+        <article class="refinery-card" data-medium="water">
+          <div class="refinery-card-head">
+            <span>Water treatment</span>
+            <strong id="refinery-water-status">Normal</strong>
+          </div>
+          <ul>
+            <li>Raw water feed</li>
+            <li>Pump transfer</li>
+            <li>Media filter</li>
+            <li>Polishing vessel</li>
+          </ul>
+          <div class="refinery-metric"><span>Flow</span><strong id="refinery-water-flow-metric">-- m³/h</strong></div>
+          <div class="refinery-metric"><span>pH</span><strong id="refinery-water-ph">--</strong></div>
+          <div class="refinery-metric"><span>Turbidity</span><strong id="refinery-water-turbidity">-- NTU</strong></div>
+          <div class="refinery-metric"><span>Conductivity / DO</span><strong id="refinery-water-chemistry">-- / --</strong></div>
+        </article>
+        <article class="refinery-card" data-medium="gas">
+          <div class="refinery-card-head">
+            <span>Gas conditioning</span>
+            <strong id="refinery-gas-status">Normal</strong>
+          </div>
+          <ul>
+            <li>Separator</li>
+            <li>Knockout drum</li>
+            <li>Scrubber</li>
+            <li>Condensed header</li>
+          </ul>
+          <div class="refinery-metric"><span>Flow</span><strong id="refinery-gas-flow-metric">-- Nm³/h</strong></div>
+          <div class="refinery-metric"><span>Pressure</span><strong id="refinery-gas-pressure">-- bar</strong></div>
+          <div class="refinery-metric"><span>H₂S</span><strong id="refinery-gas-h2s">-- ppm</strong></div>
+          <div class="refinery-metric"><span>Methane</span><strong id="refinery-gas-methane">-- %</strong></div>
+        </article>
+        <article class="refinery-card" data-medium="oil">
+          <div class="refinery-card-head">
+            <span>Oil conditioning</span>
+            <strong id="refinery-oil-status">Normal</strong>
+          </div>
+          <ul>
+            <li>Feed tank</li>
+            <li>Transfer pump</li>
+            <li>Filter / heat exchanger</li>
+            <li>Receiver tank</li>
+          </ul>
+          <div class="refinery-metric"><span>Flow</span><strong id="refinery-oil-flow-metric">-- m³/h</strong></div>
+          <div class="refinery-metric"><span>Outlet temp</span><strong id="refinery-oil-temperature">-- °C</strong></div>
+          <div class="refinery-metric"><span>Viscosity</span><strong id="refinery-oil-viscosity">-- cSt</strong></div>
+          <div class="refinery-metric"><span>Water / particles</span><strong id="refinery-oil-chemistry">-- / --</strong></div>
+        </article>
+      </div>
+      <p class="info multistream-boundary"><strong>Model boundary:</strong> this is an illustrative refinery-style material flow model for training and proposal review. It is not a live physical plant, not a verified equipment design, and not connected to hardware or field instruments.</p>
+    </section>
+
+    <section class="card panel multistream-panel">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">FOUR-STREAM PROCESS TWIN · SYNTHETIC LIVE VALUES</span>
+          <h2>Air cleaning, water treatment, gas conditioning &amp; oil conditioning</h2>
+        </div>
+        <span class="chip subtle" id="multistream-status" role="status">Waiting for simulated process</span>
+      </div>
+      <p class="info">Follow each material through representative equipment in the 3D yard. Flow markers, tank levels, status indicators, and instrument cards update from the local simulator. Set independent blower, water-feed-pump, and gas-compressor loads; the oil flow and temperature reuse the transfer-skid operating controls.</p>
+      <div class="multistream-controls" role="group" aria-label="Simulated process bypass scenarios">
+        <span class="multistream-control-label">Inject a simulated bypass:</span>
+        <label><input id="media-air-bypass" type="checkbox" /><span>Air filter</span></label>
+        <label><input id="media-water-bypass" type="checkbox" /><span>Water treatment</span></label>
+        <label><input id="media-gas-bypass" type="checkbox" /><span>Gas scrubber</span></label>
+        <label><input id="media-oil-bypass" type="checkbox" /><span>Oil filter</span></label>
+        <button id="media-reset" type="button">Reset stream scenarios</button>
+        <button id="media-reset-view" type="button">Reset 3D view</button>
+      </div>
+      <div class="multistream-viewport">
+        <canvas id="multistream-canvas" aria-label="Interactive 3D simulated air, water, gas, and oil treatment equipment. Drag to orbit and scroll to zoom."></canvas>
+        <span class="multistream-help">DRAG TO ORBIT · SCROLL TO ZOOM · FOUR SIMULATED PROCESS TRAINS</span>
+      </div>
+      <div class="multistream-readings">
+        <article class="multistream-reading air-reading" data-stream="air">
+          <h3>Air cleaning</h3>
+          <p>Intake → blower → particle filter → carbon bed → treated-air stack</p>
+          <label class="multistream-load">Blower load <input id="media-air-load" type="range" min="0" max="100" value="72" step="1" /><output id="media-air-load-value">72%</output></label>
+          <dl>
+            <div><dt>Air flow</dt><dd id="media-air-flow">-- Nm³/h</dd></div>
+            <div><dt>Outlet PM2.5</dt><dd id="media-air-pm25">-- µg/m³</dd></div>
+            <div><dt>Outlet PM10</dt><dd id="media-air-pm10">-- µg/m³</dd></div>
+            <div><dt>Outlet CO₂ / VOC</dt><dd><span id="media-air-co2">-- ppm</span> / <span id="media-air-voc">-- ppm</span></dd></div>
+            <div><dt>Filter ΔP</dt><dd id="media-air-dp">-- kPa</dd></div>
+          </dl>
+        </article>
+        <article class="multistream-reading water-reading" data-stream="water">
+          <h3>Water treatment</h3>
+          <p>Raw-water tank → pump → media filter → treatment vessel → treated-water tank</p>
+          <label class="multistream-load">Feed-pump load <input id="media-water-load" type="range" min="0" max="100" value="68" step="1" /><output id="media-water-load-value">68%</output></label>
+          <dl>
+            <div><dt>Water flow</dt><dd id="media-water-flow">-- m³/h</dd></div>
+            <div><dt>Outlet pH</dt><dd id="media-water-ph">--</dd></div>
+            <div><dt>Outlet turbidity</dt><dd id="media-water-turbidity">-- NTU</dd></div>
+            <div><dt>Conductivity / DO</dt><dd><span id="media-water-conductivity">-- µS/cm</span> / <span id="media-water-do">-- mg/L</span></dd></div>
+          </dl>
+        </article>
+        <article class="multistream-reading gas-reading" data-stream="gas">
+          <h3>Gas conditioning</h3>
+          <p>Feed separator → knockout drum → scrubber → cooler → conditioned-gas header</p>
+          <label class="multistream-load">Compressor load <input id="media-gas-load" type="range" min="0" max="100" value="64" step="1" /><output id="media-gas-load-value">64%</output></label>
+          <dl>
+            <div><dt>Gas flow</dt><dd id="media-gas-flow">-- Nm³/h</dd></div>
+            <div><dt>Header pressure</dt><dd id="media-gas-pressure">-- bar</dd></div>
+            <div><dt>Outlet H₂S</dt><dd id="media-gas-h2s">-- ppm</dd></div>
+            <div><dt>Methane indication</dt><dd id="media-gas-methane">-- %</dd></div>
+          </dl>
+        </article>
+        <article class="multistream-reading oil-reading" data-stream="oil">
+          <h3>Oil conditioning</h3>
+          <p>Feed tank → transfer pump → filter → heat exchanger → receiver</p>
+          <dl>
+            <div><dt>Oil flow</dt><dd id="media-oil-flow">-- m³/h</dd></div>
+            <div><dt>Outlet temperature</dt><dd id="media-oil-temperature">-- °C</dd></div>
+            <div><dt>Estimated viscosity</dt><dd id="media-oil-viscosity">-- cSt</dd></div>
+            <div><dt>Water / particles</dt><dd><span id="media-oil-water">-- %</span> / <span id="media-oil-particles">--</span></dd></div>
+          </dl>
+        </article>
+      </div>
+      <div class="multistream-detail" id="multistream-detail" aria-live="polite">Select a piece of equipment in the 3D yard to inspect its role in the simulated process.</div>
+      <details class="multistream-assumptions">
+        <summary>Model equations and assumptions</summary>
+        <ul>
+          <li>Air flow = 1,800 × blower load fraction; PM2.5 / PM10 use illustrative normal/bypass factors of 0.07 / 0.78 and 0.06 / 0.74. CO₂ is not removed.</li>
+          <li>Water flow = 46 × feed-pump load fraction (m³/h); illustrative outlet pH is 7.2 normally and 6.35 with treatment bypass. The simulated feed tank receives 52 m³/h and the product tank draws 35 m³/h; one simulation step advances one minute.</li>
+          <li>Gas flow = 24 × compressor load fraction (Nm³/h); header pressure = 4.8 + 1.65 × load fraction (bar). H₂S uses a 0.045 normal / 0.96 bypass factor.</li>
+          <li>Oil flow and temperature use the transfer-skid model. Estimated viscosity = 38 × exp(−0.018 × (outlet temperature − 40)) cSt; particle count is a fixed illustrative scenario value.</li>
+          <li>Clamping is applied to load percentages and tank levels. Sinusoidal variation is cosmetic display variation, not sensor noise derived from a device.</li>
+        </ul>
+      </details>
+      <p class="info multistream-method">The media-quality calculations are intentionally small demonstrations: the air particle/carbon stages do not remove CO₂; water treatment bypass shifts illustrative pH from 7.2 to 6.35 and increases turbidity; the gas scrubber changes H₂S but not the methane indication; oil-filter bypass changes particle count but does not calculate dewatering. Conductivity, dissolved oxygen, methane fraction, and oil water content are illustrative inputs/estimates, not conserved or validated process outputs.</p>
+      <p class="info multistream-boundary"><strong>Model boundary:</strong> “air cleaning,” “water treatment,” “gas conditioning,” and “oil conditioning” are generic teaching trains, not a complete refinery process or crude-oil refinery design. Air is cleaned, not refined. Only oil flow and temperature follow the existing transfer-skid equations; other values are synthetic and illustrative, not mass-balanced plant quality, safety limits, recipes, or equipment sizing. Nothing here is connected to physical hardware.</p>
+    </section>
+
+    <section class="card panel hardware-bench-panel">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">INDUSTRIAL HARDWARE MODEL · 3D SIMULATION</span>
+          <h2>Instrument panel with hard-wired controller and field interfaces</h2>
+        </div>
+        <span class="chip subtle" id="bench-live-state">Waiting for simulated I/O</span>
+      </div>
+      <p class="info">Orbit the 3D assembly to inspect the actual-looking enclosure, DIN-rail power modules, controller PCB, input-interface boards, terminal strips, cable glands, ferruled conductors and soldered PCB joints. Simulated readings follow the transfer skid. This is a representative industrial-style model—not a model of purchased components or an approved build drawing.</p>
+      <div class="bench-toolbar" role="group" aria-label="Hardware wiring display options">
+        <button class="bench-filter active" data-wire-filter="all" type="button" aria-pressed="true">All connections</button>
+        <button class="bench-filter" data-wire-filter="power" type="button" aria-pressed="false">Power wires</button>
+        <button class="bench-filter" data-wire-filter="signal" type="button" aria-pressed="false">Sensor signals</button>
+        <button class="bench-filter" data-wire-filter="data" type="button" aria-pressed="false">Data / network</button>
+        <button class="bench-animate" id="bench-animate" type="button" aria-pressed="true">Pause data pulses</button>
+        <button class="bench-reset-view" id="bench-reset-view" type="button">Reset view</button>
+        <span class="bench-wire-key"><i class="wire-key red"></i>24 VDC <i class="wire-key black"></i>0 V <i class="wire-key yellow"></i>Analog <i class="wire-key blue"></i>RS-485 <i class="wire-key green"></i>Ethernet</span>
+      </div>
+      <div class="hardware-bench-scroll">
+        <div class="hardware-assembly-view">
+          <canvas id="hardware-assembly-canvas" aria-label="Interactive 3D simulated industrial electronics assembly. Drag to orbit, scroll to zoom, and click a component for details."></canvas>
+          <div class="assembly-view-help">DRAG TO ORBIT · SCROLL TO ZOOM · SELECT AN ASSEMBLY</div>
+        </div>
+      </div>
+      <div class="bench-detail" aria-live="polite">
+        <div><span class="eyebrow" id="bench-detail-kicker">SELECT A COMPONENT</span><h3 id="bench-detail-title">Industrial-style wired assembly</h3></div>
+        <p class="info" id="bench-detail-copy">Select a module or instrument to inspect its role and related asset. The animation represents simulated values only; it is not electrical telemetry or a physical hardware connection.</p>
+      </div>
+      <p class="info bench-safety-note"><strong>Electrical boundary:</strong> this generic 3D visualization does not specify exact part numbers, rated terminals, pinouts, conductor sizes, protective devices, isolation coordination or safety approvals. It is not an assembly drawing. No physical board, field instrument or wire is connected to this page.</p>
+    </section>
+
+    <section class="card panel hardware-system-map">
+      <div class="hardware-header">
+        <div>
+          <span class="eyebrow">MONITORING TOPOLOGY</span>
+          <h2>Complete instrument and hardware network</h2>
+        </div>
+        <span class="chip subtle" id="hardware-catalog-count">Loading candidate components</span>
+      </div>
+      <div class="hardware-legend">
+        <span><i class="legend-power"></i>Power rail</span>
+        <span><i class="legend-sensor"></i>Sensor / analyzer</span>
+        <span><i class="legend-transmitter"></i>Transmitter / signal conditioning</span>
+        <span><i class="legend-logic"></i>Controller / gateway</span>
+        <span><i class="legend-bus"></i>Field bus / network</span>
+      </div>
+      <div class="hardware-grid" id="hardware-grid"></div>
+    </section>
+
+    <section class="card panel hardware-schematic-wrap">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">SIMULATED SIGNAL FLOW</span>
+          <h2>Live path from field hardware to dashboard</h2>
+        </div>
+        <span class="chip subtle" id="hardware-status">Gateway online</span>
+      </div>
+      <div class="hardware-schematic" id="hardware-schematic">
+        <div class="hw-block sensor-block">
+          <span class="hw-label">Air quality sensors</span>
+          <div class="hw-node" data-node="air-particles">PM2.5 / PM10</div>
+          <div class="hw-node" data-node="air-co2">CO2</div>
+          <div class="hw-node" data-node="air-voc">VOC</div>
+        </div>
+        <div class="hw-arrow">→</div>
+        <div class="hw-block transmitter-block">
+          <span class="hw-label">Signal conditioning</span>
+          <div class="hw-node" data-node="signal-air">A/D + filtering</div>
+          <div class="hw-node" data-node="signal-water">4–20 mA / Modbus</div>
+          <div class="hw-node" data-node="signal-oil">Inline analyzer bus</div>
+        </div>
+        <div class="hw-arrow">→</div>
+        <div class="hw-block logic-block">
+          <span class="hw-label">Edge / control layer</span>
+          <div class="hw-node" data-node="gateway">Read-only gateway</div>
+          <div class="hw-node" data-node="register">Data register / logger</div>
+          <div class="hw-node" data-node="switch">Switch / power rail</div>
+        </div>
+        <div class="hw-arrow">→</div>
+        <div class="hw-block dashboard-block">
+          <span class="hw-label">Dashboard and twin</span>
+          <div class="hw-node" data-node="dashboard">RefinAI dashboard</div>
+          <div class="hw-node" data-node="twin">Digital twin view</div>
+          <div class="hw-node" data-node="health">Health / alarm state</div>
+        </div>
+      </div>
+      <div class="hardware-controls-wrap">
+        <div class="hardware-controls">
+          <label class="sim-toggle"><input id="hardware-gateway" type="checkbox" checked /><span>Read-only gateway online</span></label>
+          <label class="sim-toggle"><input id="hardware-power" type="checkbox" checked /><span>Power rail energized</span></label>
+          <label class="sim-toggle"><input id="hardware-bus" type="checkbox" checked /><span>Field bus active</span></label>
+          <button class="sim-reset" id="hardware-reset" type="button">Reset topology</button>
+        </div>
+        <div class="hardware-alerts" id="hardware-alerts"></div>
+      </div>
+    </section>
+
+    <section class="card panel hardware-plant-view">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">PHYSICAL ARRANGEMENT</span>
+          <h2>Process area and component layout</h2>
+        </div>
+        <span class="chip subtle">Field arrangement only</span>
+      </div>
+      <div class="plant-layout">
+        <div class="plant-zone air-zone">
+          <h3>Air handling</h3>
+          <div class="plant-bus">
+            <span>Air PM2.5 / PM10</span>
+            <span>Air CO2</span>
+            <span>Air VOC</span>
+          </div>
+        </div>
+        <div class="plant-zone water-zone">
+          <h3>Water utility</h3>
+          <div class="plant-bus">
+            <span>Water pH</span>
+            <span>Water turbidity</span>
+            <span>Water conductivity</span>
+            <span>Water DO</span>
+          </div>
+        </div>
+        <div class="plant-zone oil-zone">
+          <h3>Oil circuit</h3>
+          <div class="plant-bus">
+            <span>Oil viscosity</span>
+            <span>Oil water content</span>
+            <span>Oil particle count</span>
+            <span>Oil dielectric</span>
+          </div>
+        </div>
+        <div class="plant-zone gas-zone">
+          <h3>Gas safety</h3>
+          <div class="plant-bus">
+            <span>Gas species analyzer</span>
+            <span>H2S detector</span>
+            <span>Methane detector</span>
+            <span>Optical gas imaging</span>
+          </div>
+        </div>
+        <div class="plant-zone process-zone">
+          <h3>Process area</h3>
+          <div class="plant-bus">
+            <span>Process pressure</span>
+            <span>Process flow</span>
+            <span>Machine vibration</span>
+            <span>Corrosion / thickness</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="hardware-ops-grid">
+      <section class="card panel hierarchy-panel">
+        <div class="overview-header">
+          <div>
+            <span class="eyebrow">ASSET NAVIGATION</span>
+            <h2>Equipment hierarchy</h2>
+          </div>
+          <span class="chip subtle">Demo skid</span>
+        </div>
+        <p class="info">Select an asset to focus its health and instrument mappings. The hierarchy is a sample structure, not an HPCL asset register.</p>
+        <ul class="asset-tree" id="asset-tree" aria-label="Simulated equipment hierarchy">
+          <li>
+            <button class="asset-tree-node" type="button" data-asset="site" aria-pressed="false">Demo process area</button>
+            <ul>
+              <li>
+                <button class="asset-tree-node" type="button" data-asset="transfer-skid" aria-pressed="false">Transfer skid</button>
+                <ul>
+                  <li><button class="asset-tree-node active" type="button" data-asset="feed-tank" aria-pressed="true">TK-101 · Feed tank</button></li>
+                  <li><button class="asset-tree-node" type="button" data-asset="transfer-pump" aria-pressed="false">P-101 · Transfer pump</button></li>
+                  <li><button class="asset-tree-node" type="button" data-asset="filter" aria-pressed="false">F-101 · Filter</button></li>
+                  <li><button class="asset-tree-node" type="button" data-asset="heat-exchanger" aria-pressed="false">E-101 · Heat exchanger</button></li>
+                  <li><button class="asset-tree-node" type="button" data-asset="receiver-tank" aria-pressed="false">TK-102 · Receiver tank</button></li>
+                  <li><button class="asset-tree-node" type="button" data-asset="instrumentation" aria-pressed="false">I/O · Instrumentation</button></li>
+                  <li><button class="asset-tree-node" type="button" data-asset="gateway" aria-pressed="false">GW-01 · Read-only gateway</button></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card panel health-panel">
+        <div class="overview-header">
+          <div>
+            <span class="eyebrow">SIMULATED CONDITION SUMMARY</span>
+            <h2>Equipment health matrix</h2>
+          </div>
+          <span class="chip subtle" id="health-overall">Waiting for telemetry</span>
+        </div>
+        <p class="info">Condition bands are simple demo rules on simulated values—not validated diagnostic thresholds or maintenance instructions.</p>
+        <div class="table-scroll">
+          <table class="recs health-table">
+            <thead><tr><th>Equipment</th><th>Key indication</th><th>State</th><th>Basis</th></tr></thead>
+            <tbody id="health-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="card panel alarm-panel">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">RULE-BASED DEMONSTRATION · NO SAFETY FUNCTION</span>
+          <h2>Alarm and event console</h2>
+        </div>
+        <span class="chip subtle" id="alarm-count" aria-live="polite">No active demo alarms</span>
+      </div>
+      <p class="info">Illustrative high/low and communication-quality alarms are evaluated against this browser simulation. Acknowledge only records a demo operator action; it does not clear a condition or represent a plant alarm system.</p>
+      <ol class="alarm-list" id="alarm-list" aria-live="polite"></ol>
+      <details class="alarm-history-details">
+        <summary>Recent alarm and topology events</summary>
+        <ol class="alarm-history" id="alarm-history"></ol>
+      </details>
+    </section>
+
+    <section class="card panel tag-map-panel">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">INSTRUMENT-TO-DISPLAY TRACEABILITY</span>
+          <h2>Tag-to-dashboard wiring map</h2>
+        </div>
+        <span class="chip subtle" id="tag-map-status">Simulated source</span>
+      </div>
+      <p class="info">Mappings below trace the skid's generated demonstration tags through a signal interface and read-only register/node reference to their dashboard destination. Addresses and node IDs are mock examples; they are not configured devices or an HPCL tag list.</p>
+      <div class="table-scroll">
+        <table class="recs tag-map-table">
+          <thead><tr><th>Tag</th><th>Asset / instrument</th><th>Simulated reading</th><th>Signal route</th><th>Example read-only address</th><th>Dashboard destination</th><th>Quality</th></tr></thead>
+          <tbody id="tag-map-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card panel protocol-panel">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">LOCAL PROTOCOL MOCK · READ-ONLY</span>
+          <h2>Modbus / OPC UA polling simulator</h2>
+        </div>
+        <span class="chip subtle" id="protocol-status" aria-live="polite">Not polled yet</span>
+      </div>
+      <p class="info">Poll reads only the current synthetic skid snapshot from this page. No socket, PLC, broker, gateway, or external endpoint is contacted; there is no write operation.</p>
+      <div class="protocol-controls">
+        <label for="protocol-select">Mock interface</label>
+        <select id="protocol-select">
+          <option value="modbus">Modbus TCP · holding-register example</option>
+          <option value="opcua">OPC UA · NodeId example</option>
+        </select>
+        <button class="protocol-poll" id="protocol-poll" type="button">Poll simulated endpoint</button>
+        <span id="protocol-poll-count">Polls: 0</span>
+      </div>
+      <div class="table-scroll">
+        <table class="recs protocol-table">
+          <thead><tr><th>Address / NodeId</th><th>Data type</th><th>Value</th><th>Unit</th><th>Quality</th></tr></thead>
+          <tbody id="protocol-rows"><tr><td colspan="5">Poll to read the current synthetic snapshot.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+
+  <section class="tabpanel" id="panel-modules">
+    <section class="card panel modules-intro">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">45 ADDITIONAL MODULE TABS</span>
+          <h2>Process analytics & sensor readiness</h2>
+        </div>
+        <span class="chip subtle" id="module-count">Loading modules</span>
+      </div>
+      <p class="info">Benchmark tabs chart included UCI/NASA data. The hardware catalog is a list of candidate measurement options, not a bill of materials: what is required depends on the selected asset, failure modes, and engineering study. Use the simulated transfer-skid twin below to understand a plausible equipment, instrument, and read-only data path; none of its components are physically connected.</p>
+      <p class="info">For a real pilot, only select instruments needed for the agreed asset and question (for example, pressure/flow/temperature plus vibration or motor-power monitoring for a rotating transfer skid), along with an approved time-synchronized read-only data path. Gas-safety detectors, water/oil analyzers, cameras, and corrosion inspection tools are separate, hazard- or task-specific options—not universal RefinAI requirements. Final selection and installation require plant engineering, instrument, and OT/IT approval.</p>
+      <div class="module-filters" role="group" aria-label="Filter process modules">
+        <button class="module-filter active" data-filter="all" aria-pressed="true">All</button>
+        <button class="module-filter" data-filter="benchmark" aria-pressed="false">Benchmark data</button>
+        <button class="module-filter" data-filter="hardware" aria-pressed="false">Hardware readiness</button>
+      </div>
+    </section>
+    <section class="card panel twin-sim-panel">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">INTERACTIVE DIGITAL-TWIN LAB · SIMULATED</span>
+          <h2>Transfer pump, filter &amp; heat-exchanger skid</h2>
+        </div>
+        <span class="chip simulated-chip" id="twin-sim-status">SIMULATION INITIALIZING</span>
+      </div>
+      <p class="info panel-note">This is a transparent, deterministic engineering demonstration—not a plant connection, safety model, or validated process simulator. Controls change a simplified mass balance, pump/line pressure losses, filter restriction, heat-exchanger effectiveness, and receiver inventory. Instrument values are simulated with small display noise.</p>
+      <div class="twin-sim-layout">
+        <div class="sim-controls">
+          <h3>Operating conditions</h3>
+          <label><span>Feed demand <strong id="sim-feed-value">55 m³/h</strong></span><input id="sim-feed" type="range" min="30" max="75" step="1" value="55" /></label>
+          <label><span>Pump speed <strong id="sim-speed-value">90%</strong></span><input id="sim-speed" type="range" min="45" max="100" step="1" value="90" /></label>
+          <label><span>Control valve opening <strong id="sim-valve-value">90%</strong></span><input id="sim-valve" type="range" min="35" max="100" step="1" value="90" /></label>
+          <label><span>Hot utility temperature <strong id="sim-utility-value">150 °C</strong></span><input id="sim-utility" type="range" min="120" max="180" step="1" value="150" /></label>
+          <label><span>Downstream draw <strong id="sim-draw-value">45 m³/h</strong></span><input id="sim-draw" type="range" min="30" max="60" step="1" value="45" /></label>
+          <label class="sim-toggle"><input id="sim-filter-restriction" type="checkbox" /><span>Inject filter restriction</span></label>
+          <label class="sim-toggle"><input id="sim-hx-fouling" type="checkbox" /><span>Inject exchanger fouling</span></label>
+          <label class="sim-toggle"><input id="sim-gateway" type="checkbox" checked /><span>Read-only gateway online</span></label>
+          <button class="sim-reset" id="sim-reset" type="button">Reset simulation</button>
+          <p class="info sim-model-note">Simulation parameter values are illustrative. Do not use the response curves, thresholds, or outputs for design, operating limits, or safety decisions.</p>
+        </div>
+        <div class="sim-twin">
+          <div class="sim-twin-heading"><h3>Equipment and instrument topology</h3><span id="sim-clock">Simulated time 00:00</span></div>
+          <div class="sim-3d-wrap">
+            <div class="sim-3d-heading"><h3>Interactive 3D skid view</h3><span id="skid3d-status" role="status">Loading 3D model…</span></div>
+            <canvas id="skid3d-canvas" aria-label="Interactive 3D simulated transfer skid; drag to rotate and scroll to zoom"></canvas>
+            <p class="info">Drag to rotate, scroll to zoom. The equipment states and flowing markers follow the internal simulated process; instrument quality can be stale when the gateway is offline.</p>
+          </div>
+          <div class="sim-flow-scroll">
+          <div class="sim-flow" aria-label="Simulated process flow from feed tank through pump, filter and heat exchanger to receiver">
+            <article class="sim-equipment">
+              <span class="sim-equip-kind">VESSEL · TK-101</span><strong>Feed tank</strong>
+              <div class="sim-vessel"><i id="sim-feed-level"></i></div>
+              <span class="sim-equip-value" id="sim-level-value">-- %</span>
+              <span class="sim-sensor-tag">LT-101 · level</span>
+            </article>
+            <div class="sim-link"><i></i><span>feed</span></div>
+            <article class="sim-equipment" id="sim-pump-node">
+              <span class="sim-equip-kind">MOTOR PUMP · P-101</span><strong>Transfer pump</strong>
+              <div class="sim-pump-icon"><span>↻</span></div>
+              <span class="sim-equip-value" id="sim-pump-state">--</span>
+              <span class="sim-sensor-tag">PT-101 · VIB-101</span>
+            </article>
+            <div class="sim-link"><i></i><span>flow</span></div>
+            <article class="sim-equipment" id="sim-filter-node">
+              <span class="sim-equip-kind">STRAINER · F-101</span><strong>Filter</strong>
+              <div class="sim-filter-icon"><i></i><i></i><i></i></div>
+              <span class="sim-equip-value" id="sim-filter-state">ΔP -- bar</span>
+              <span class="sim-sensor-tag">DPIT-101</span>
+            </article>
+            <div class="sim-link"><i></i><span>process</span></div>
+            <article class="sim-equipment" id="sim-hx-node">
+              <span class="sim-equip-kind">EXCHANGER · E-101</span><strong>Heat exchanger</strong>
+              <div class="sim-hx-icon"><i></i><i></i><i></i></div>
+              <span class="sim-equip-value" id="sim-hx-state">Outlet -- °C</span>
+              <span class="sim-sensor-tag">TT-101 / TT-102</span>
+            </article>
+            <div class="sim-link"><i></i><span>product</span></div>
+            <article class="sim-equipment">
+              <span class="sim-equip-kind">VESSEL · TK-102</span><strong>Receiver</strong>
+              <div class="sim-vessel"><i id="sim-receiver-level"></i></div>
+              <span class="sim-equip-value" id="sim-receiver-value">-- %</span>
+              <span class="sim-sensor-tag">LT-102 · level</span>
+            </article>
+          </div>
+          </div>
+          <div class="sim-telemetry">
+            <article><span>Measured flow · FT-101</span><strong id="sim-flow-value">-- m³/h</strong></article>
+            <article><span>Discharge pressure · PT-102</span><strong id="sim-pressure-value">-- bar</strong></article>
+            <article><span>Filter differential · DPIT-101</span><strong id="sim-dp-value">-- bar</strong></article>
+            <article><span>Outlet temperature · TT-102</span><strong id="sim-temp-value">-- °C</strong></article>
+            <article><span>Vibration · VIB-101</span><strong id="sim-vibration-value">-- mm/s</strong></article>
+            <article><span>Motor power · EM-101</span><strong id="sim-power-value">-- kW</strong></article>
+          </div>
+          <div class="sim-connection-path" aria-label="Simulated sensor-to-dashboard signal path">
+            <span class="sim-path-node">Process equipment</span><i></i><span class="sim-path-node">Transmitters<br />4–20 mA / HART</span><i></i><span class="sim-path-node">Remote I/O<br />edge gateway</span><i></i><span class="sim-path-node">Read-only historian<br />OPC UA</span><i></i><span class="sim-path-node">Twin display</span>
+          </div>
+          <details class="sim-equations">
+            <summary>Model equations and assumed design basis</summary>
+            <p>All constants below are illustrative placeholders, not measurements or an engineered design. Replace them only with site-approved equipment data.</p>
+            <ul>
+              <li>Flow = demand × speed × valve opening × feed-level availability × filter factor. Feed-level availability decreases linearly below 20% inventory.</li>
+              <li>Pump head = 2 + 7 × speed² bar; discharge pressure subtracts filter and line losses.</li>
+              <li>Filter drop = 0.12 + 0.00012 × flow² bar, plus 1.1 bar for the injected restriction; line loss = 0.00045 × flow² bar.</li>
+              <li>Feed tank: 45 m³ capacity with 65 m³/h make-up. Receiver: 30 m³ capacity with the configured downstream draw. Levels integrate one simulated minute per real second; overflow is clipped at capacity.</li>
+              <li>Pump efficiency = 72%; exchanger effectiveness uses an illustrative UA factor of 0.82 clean / 0.26 fouled. No equipment curve or process fluid properties are fitted.</li>
+            </ul>
+          </details>
+          <div class="sim-sensor-table-wrap">
+            <table class="recs sim-sensor-table">
+              <thead><tr><th>Tag</th><th>Location / instrument</th><th>Simulated value</th><th>Signal path</th><th>Quality</th></tr></thead>
+              <tbody id="sim-sensor-rows"></tbody>
+            </table>
+          </div>
+          <div class="sim-trend-wrap"><h3>Simulated process trend · chronological simulation only</h3><div class="chart-frame"><canvas id="sim-trend-chart" aria-label="Chart of simulated flow and vibration"></canvas></div></div>
+          <p class="info sim-boundary">Online readings are synthetic data generated by this page, not readings from physical instruments. The gateway toggle simulates loss of dashboard telemetry; it does not create a network connection. This demo has no PLC writes and cannot represent an actual safety instrumented system.</p>
+        </div>
+      </div>
+    </section>
+    <div class="module-view-layout">
+      <section class="card panel module-view">
+        <div class="overview-header">
+          <div>
+            <span class="eyebrow" id="module-category">MODULE</span>
+            <h2 id="module-title">Select a process module</h2>
+          </div>
+          <span class="chip subtle" id="module-status">Awaiting selection</span>
+        </div>
+        <p class="info module-description" id="module-description"></p>
+        <div class="module-chart-wrap" id="module-chart-wrap" hidden>
+          <canvas id="module-chart"></canvas>
+          <img id="module-image" alt="Benchmark visualization" hidden />
+        </div>
+        <div class="module-pipeline" id="module-pipeline" hidden>
+          <div class="pipeline-step"><span>1</span><strong>Process</strong></div>
+          <i aria-hidden="true"></i>
+          <div class="pipeline-step"><span>2</span><strong id="pipeline-sensor">Sensor</strong></div>
+          <i aria-hidden="true"></i>
+          <div class="pipeline-step"><span>3</span><strong>Gateway</strong></div>
+          <i aria-hidden="true"></i>
+          <div class="pipeline-step offline"><span>4</span><strong>Not connected</strong></div>
+        </div>
+        <p class="module-empty" id="module-empty">Choose a module tab above to inspect its data view or hardware requirements.</p>
+      </section>
+      <aside class="card panel module-source">
+        <span class="eyebrow">SOURCE & REQUIREMENTS</span>
+        <h2 id="module-source-title">Evidence boundary</h2>
+        <p class="info" id="module-source-detail">No new live plant source is configured. Benchmark results remain separate from refinery telemetry.</p>
+        <div class="module-source-meta" id="module-source-meta"></div>
+      </aside>
+    </div>
+  </section>
+
   <!-- TAB 2: historical replay -->
   <section class="tabpanel" id="panel-replay">
     <div class="card panel replay-controls">
@@ -147,17 +860,17 @@
     </div>
     <div class="grid charts">
       <div class="card panel">
-        <h2>Measured vs Model-Estimated Net Output</h2>
+        <h2>Actual Generation vs Forecast Output</h2>
         <div class="chart-frame"><canvas id="outputChart"></canvas></div>
       </div>
       <div class="card panel">
-        <h2>Model Residual by Source Sample</h2>
+        <h2>Performance Delta by Sample</h2>
         <div class="chart-frame"><canvas id="residualChart"></canvas></div>
       </div>
     </div>
     <div class="grid charts">
       <div class="card panel">
-        <h2>Measured Output vs Ambient Temperature</h2>
+        <h2>Generation vs Ambient Load Pattern</h2>
         <div class="chart-frame"><canvas id="relationshipChart"></canvas></div>
       </div>
       <div class="card panel sample-table-panel">
@@ -170,6 +883,111 @@
 
   <!-- TAB 3: Real-Data Analytics -->
   <section class="tabpanel" id="panel-analytics">
+    <div class="card panel insight-panel">
+      <h2>Benchmark relationships and hypotheses to test</h2>
+      <div class="insight-grid">
+        <article class="insight-card">
+        <span class="insight-kicker">Measured input 1</span>
+        <h3>Ambient temperature varies with measured CCPP output.</h3>
+        <p>The UCI benchmark contains both values and supports an association analysis. It does not establish a causal mechanism, a refinery effect, or a controllable operating target.</p>
+        </article>
+        <article class="insight-card">
+        <span class="insight-kicker">Measured input 2</span>
+        <h3>Exhaust vacuum is an input, not a diagnosis.</h3>
+        <p>Benchmark plots can show how vacuum values co-vary with output. Without timestamps, equipment labels, and site context, they cannot identify condenser degradation or a maintenance need.</p>
+        </article>
+        <article class="insight-card">
+        <span class="insight-kicker">Measured input 3</span>
+        <h3>Humidity is included in the benchmark model.</h3>
+        <p>Its relationship with output can be explored across the measured records. The dataset alone does not quantify a causal efficiency penalty or transfer that relationship to refinery equipment.</p>
+        </article>
+        <article class="insight-card">
+        <span class="insight-kicker">Residual context</span>
+        <h3>A residual is not a fault alarm.</h3>
+        <p>The absolute residual can be compared with the held-out set MAE as benchmark context. These shuffled records have no time order or maintenance labels, so they cannot establish persistence, normality, or a cause.</p>
+        </article>
+      </div>
+    </div>
+    <div class="grid charts">
+      <div class="card panel">
+        <h2>C-MAPSS: Sensor Degradation (5 engines)</h2>
+        <img class="ana-img" src="../ml/analytics/cmapss_degradation.png" alt="NASA C-MAPSS sensor degradation curves for five engines" />
+      </div>
+      <div class="card panel">
+        <h2>C-MAPSS: Engine Lifetime Distribution</h2>
+        <img class="ana-img" src="../ml/analytics/cmapss_rul_dist.png" alt="Distribution of NASA C-MAPSS engine lifetimes" />
+      </div>
+    </div>
+    <div class="grid charts">
+      <div class="card panel">
+        <h2>C-MAPSS: Sensor Correlation Matrix</h2>
+        <img class="ana-img" src="../ml/analytics/cmapss_corr_heatmap.png" alt="Correlation matrix for NASA C-MAPSS sensors" />
+      </div>
+      <div class="card panel">
+        <h2>CCPP: Feature vs Energy Output</h2>
+        <img class="ana-img" src="../ml/analytics/ccpp_scatter.png" alt="Measured CCPP inputs compared with net power output" />
+      </div>
+    </div>
+    <div class="card panel">
+      <h2>CCPP: Energy Output Distribution</h2>
+      <img class="ana-img" src="../ml/analytics/ccpp_pe_dist.png" alt="Distribution of measured CCPP net power output" />
+    </div>
+    <div class="card panel">
+      <h2>Benchmark interpretation boundaries</h2>
+      <table class="recs" id="energy-rules">
+        <tr><th>Evidence</th><th>What this prototype can show</th><th>What it cannot establish</th></tr>
+        <tr><td>Temperature, vacuum, pressure, and humidity</td><td>Measured associations with CCPP output in this public dataset</td><td>Causality, refinery operating limits, or equipment condition</td></tr>
+        <tr><td>Model estimate and residual</td><td>Held-out prediction error on individual benchmark records</td><td>An alarm threshold, measured energy waste, or a fault diagnosis</td></tr>
+        <tr><td>Replay order</td><td>Navigation through the fixed held-out split</td><td>A chronological trend or persistent deviation; source records have no timestamps</td></tr>
+        <tr><td>Operator workflow</td><td>A proposed read-only, human-reviewed pilot process</td><td>Operational recommendations before validation with approved site data</td></tr>
+      </table>
+    </div>
+    <div class="card panel">
+      <h2>Research grounding and industrial AI framing</h2>
+      <div class="insight-grid">
+        <article class="insight-card">
+          <span class="insight-kicker">Industrial monitoring</span>
+          <h3>Regime-aware baselines are central to credible process monitoring.</h3>
+          <p>Qin's survey reviews data-driven process monitoring and diagnosis methods. This prototype applies the evidence-boundary idea with an observed-input support check and benchmark residual context; it does not infer process regimes because these records have no timestamps or refinery operating labels.</p>
+        </article>
+        <article class="insight-card">
+          <span class="insight-kicker">Predictive maintenance</span>
+          <h3>Prognostic models need time alignment, labeled failures, and operator review.</h3>
+          <p>Condition-based maintenance research emphasizes diagnostics and prognostics grounded in equipment condition. Public PHM datasets such as NASA C-MAPSS support method experiments, but a refinery pilot still needs time-aligned historian data, maintenance labels, and site validation.</p>
+        </article>
+        <article class="insight-card">
+          <span class="insight-kicker">Uncertainty quantification</span>
+          <h3>Prediction intervals make uncertainty visible rather than hiding it.</h3>
+          <p>The CCPP model now uses a reserved calibration split to form split-conformal output intervals. The displayed held-out coverage is a benchmark diagnostic; exchangeability assumptions may fail under process drift, and no refinery coverage is claimed.</p>
+        </article>
+        <article class="insight-card">
+          <span class="insight-kicker">Multivariate monitoring</span>
+          <h3>PCA screens both modeled variation and residual variation.</h3>
+          <p>Hotelling T² summarizes position within the retained principal-component space; Q summarizes reconstruction residual outside it. Their calibration-tail flags and largest input contributions are statistical context only. The CCPP table has no fault labels or time order, so these are not fault detections.</p>
+        </article>
+        <article class="insight-card">
+          <span class="insight-kicker">Human-in-the-loop review</span>
+          <h3>Feedback is captured for review, not used as an automated label.</h3>
+          <p>Accept, defer, and reject decisions can be recorded with a note and exported from this browser. The log is local demonstration data only; it is not an operator approval record, and it does not retrain the model.</p>
+        </article>
+        <article class="insight-card">
+          <span class="insight-kicker">Research papers and datasets</span>
+          <h3>Methods informing the prototype</h3>
+          <p>
+            <a href="https://doi.org/10.1016/j.arcontrol.2012.09.004">Qin (2012), Survey on data-driven industrial process monitoring and diagnosis</a> ·
+            <a href="https://doi.org/10.1016/j.ymssp.2005.09.012">Jardine, Lin &amp; Banjevic (2006), A review on machinery diagnostics and prognostics implementing condition-based maintenance</a> ·
+            <a href="https://doi.org/10.1080/00401706.1979.10489779">Jackson &amp; Mudholkar (1979), Control procedures for residuals associated with principal component analysis</a> ·
+            <a href="https://arxiv.org/abs/2107.07511">Angelopoulos &amp; Bates, A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification</a>
+          </p>
+          <p>
+            <a href="https://ti.arc.nasa.gov/tech/dash/groups/pcoe/prognostic-data-repository/">NASA PCoE C-MAPSS repository</a> ·
+            <a href="https://archive.ics.uci.edu/dataset/294/combined+cycle+power+plant">UCI Combined Cycle Power Plant dataset</a>
+          </p>
+          <p><a href="../docs/RESEARCH_TO_FEATURE_MAP.md">Read the research-to-feature analysis, validation details, and data-dependent limits</a>.</p>
+          <p class="info">References motivate methods, not claims about HPCL. This prototype does not establish refinery diagnosis, savings, or live plant control.</p>
+        </article>
+      </div>
+    </div>
     <div class="card panel">
       <h2>Dataset Provenance</h2>
       <table class="recs" id="provenance">
@@ -179,34 +997,40 @@
       </table>
       <p class="info provenance-note">The 3D scene is a reference combined-cycle plant model. UCI records are measured physical observations but shuffled and timestamp-free; NASA C-MAPSS is simulated aircraft-engine data. Neither is HPCL refinery data.</p>
     </div>
-    <div class="grid charts">
-      <div class="card panel">
-        <h2>C-MAPSS: Sensor Degradation (5 engines)</h2>
-        <img class="ana-img" src="../ml/analytics/cmapss_degradation.png" alt="degradation" />
-      </div>
-      <div class="card panel">
-        <h2>C-MAPSS: Engine Lifetime Distribution</h2>
-        <img class="ana-img" src="../ml/analytics/cmapss_rul_dist.png" alt="RUL dist" />
-      </div>
-    </div>
-    <div class="grid charts">
-      <div class="card panel">
-        <h2>C-MAPSS: Sensor Correlation Matrix</h2>
-        <img class="ana-img" src="../ml/analytics/cmapss_corr_heatmap.png" alt="corr" />
-      </div>
-      <div class="card panel">
-        <h2>CCPP: Feature vs Energy Output</h2>
-        <img class="ana-img" src="../ml/analytics/ccpp_scatter.png" alt="scatter" />
-      </div>
-    </div>
-    <div class="card panel">
-      <h2>CCPP: Energy Output Distribution</h2>
-      <img class="ana-img" src="../ml/analytics/ccpp_pe_dist.png" alt="PE dist" />
-    </div>
   </section>
 
   <!-- TAB 4: ML Models -->
   <section class="tabpanel" id="panel-models">
+    <div class="card panel insight-panel">
+      <h2>What this model layer is actually doing</h2>
+      <div class="insight-grid">
+        <article class="insight-card">
+          <span class="insight-kicker">AI estimate</span>
+          <h3>It estimates CCPP output for held-out records.</h3>
+          <p>The Gradient Boosting model uses the measured inputs in the UCI Combined Cycle Power Plant dataset. It is not a refinery model and does not predict live plant behavior.</p>
+        </article>
+        <article class="insight-card">
+          <span class="insight-kicker">Residual comparison</span>
+          <h3>It shows prediction error on each record.</h3>
+          <p>A residual is measured output minus model estimate. Its size alone does not establish an unusual operating condition, inefficiency, or maintenance trigger.</p>
+        </article>
+        <article class="insight-card">
+          <span class="insight-kicker">Model interpretation</span>
+          <h3>Permutation importance measures predictive reliance.</h3>
+          <p>Each held-out input is shuffled independently; the resulting MAE increase estimates how much the fitted benchmark model relies on that input. It is not a causal effect, and correlated inputs can share or mask importance.</p>
+        </article>
+        <article class="insight-card">
+          <span class="insight-kicker">Illustrative interface</span>
+          <h3>Heuristic indicators are not asset-health scores.</h3>
+          <p>The watchlist and review prompts are demonstration UI based on sample conditions. They are not validated component assessments, safety limits, or maintenance recommendations.</p>
+        </article>
+        <article class="insight-card">
+          <span class="insight-kicker">Illustrative business case</span>
+          <h3>Editable assumptions expose the value formula.</h3>
+          <p>The explorer calculates a scenario from user-supplied recovery, hours, tariff, and cost assumptions. It does not measure savings, avoided risk, or refinery economics.</p>
+        </article>
+      </div>
+    </div>
     <div class="grid charts">
       <div class="card panel">
         <h2>RUL Prediction: Actual vs Predicted</h2>
@@ -216,6 +1040,11 @@
         <h2>Energy Prediction: Actual vs Predicted</h2>
         <img class="ana-img" src="../ml/analytics/energy_results.png" alt="energy results" />
       </div>
+    </div>
+    <div class="card panel">
+      <h2>CCPP: Held-out permutation importance</h2>
+      <img class="ana-img" src="../ml/analytics/ccpp_permutation_importance.png" alt="Increase in held-out mean absolute error after independently shuffling each CCPP input, with repeat variability" />
+      <p class="info provenance-note">Positive values mean shuffling increased MAE on the fixed test split. Error bars show repeat variability. This diagnostic is model- and dataset-specific; correlated inputs and unrealistic shuffled combinations limit interpretation.</p>
     </div>
     <div class="card panel">
       <h2>Public Benchmark Results</h2>
@@ -228,7 +1057,7 @@
         </tr>
         <tr>
           <td>Power output</td><td>UCI CCPP; held-out 20% test, 1,914 rows</td>
-          <td>Gradient Boosting</td><td>2.220 MW</td><td>0.968</td>
+          <td>Gradient Boosting</td><td>2.262 MW</td><td>0.967</td>
           <td>Predicts plant output; residuals are not measured energy waste</td>
         </tr>
         <tr>
@@ -237,21 +1066,82 @@
           <td>Flagged 6 endpoints; no anomaly ground-truth labels</td>
         </tr>
       </table>
-      <p class="info provenance-note">RUL model selection uses an engine-held-out split; final RUL metrics use the dataset's official test labels. These benchmark scores are not validated refinery performance.</p>
+      <p class="info provenance-note">RUL model selection uses an engine-held-out split; final RUL metrics use the dataset's official test labels. Permutation importance is an additional held-out CCPP diagnostic, not a causal explanation. These benchmark scores are not validated refinery performance.</p>
+    </div>
+    <div class="card panel evidence-panel">
+      <h2>Prediction uncertainty and input support</h2>
+      <div class="evidence-grid">
+        <article class="mini-card">
+          <span class="mini-label">Current sample · nominal 90% interval</span>
+          <strong id="sample-interval">--</strong>
+          <small id="sample-interval-note">Loading calibration metadata</small>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">Input reference check</span>
+          <strong id="sample-support">--</strong>
+          <small id="sample-support-note">Compared with model-fit 1st–99th percentile ranges</small>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">Input completeness</span>
+          <strong id="sample-quality">--</strong>
+          <small id="sample-quality-note">AT, V, AP, RH availability</small>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">PCA Hotelling T²</span>
+          <strong id="sample-t2-status">--</strong>
+          <small id="sample-t2-note">Multivariate benchmark reference screen</small>
+        </article>
+        <article class="mini-card">
+          <span class="mini-label">PCA Q residual</span>
+          <strong id="sample-q-status">--</strong>
+          <small id="sample-q-note">Variation outside retained PCA components</small>
+        </article>
+      </div>
+      <p class="info provenance-note">Split-conformal bounds and PCA thresholds are calibrated on reserved UCI training records. Test coverage and flag rates are benchmark diagnostics, not guarantees under distribution shift or HPCL estimates. PCA flags and range checks are statistical screens, not fault alarms; the leading feature contribution is descriptive, not causal.</p>
+    </div>
+    <div class="card panel review-panel">
+      <div class="overview-header">
+        <div>
+          <span class="eyebrow">HUMAN-IN-THE-LOOP · DEMONSTRATION</span>
+          <h2>Record a sample review</h2>
+        </div>
+        <span class="chip subtle">Browser-local only</span>
+      </div>
+      <p class="info panel-note">Pause replay before entering feedback. This mock review log is stored only in this browser and is not sent to a server or treated as operational approval.</p>
+      <p class="review-current">Reviewing source row <strong id="review-sample-id">--</strong></p>
+      <div class="review-controls">
+        <label for="review-decision">Review outcome</label>
+        <select id="review-decision">
+          <option value="">Select outcome</option>
+          <option value="accept">Accept for further investigation</option>
+          <option value="defer">Defer review</option>
+          <option value="reject">Reject as not useful</option>
+        </select>
+        <label for="review-note">Reason or note</label>
+        <textarea id="review-note" rows="3" maxlength="500" placeholder="Optional note (maximum 500 characters)"></textarea>
+        <div class="review-actions">
+          <button id="save-review" type="button">Save sample review</button>
+          <button id="export-reviews" type="button">Export browser log</button>
+          <span id="review-count" class="sample-counter">0 saved</span>
+        </div>
+      </div>
+      <p class="info review-status" id="review-status" role="status" aria-live="polite">No review saved for this sample.</p>
     </div>
     <div class="grid charts">
       <div class="card panel">
-        <h2>Asset health & anomaly score</h2>
+        <h2>Illustrative asset watchlist</h2>
+        <p class="info panel-note">Heuristic indicators from sample conditions and model residuals. These are not component sensors, validated health scores, or safety limits.</p>
         <div class="units" id="asset-health"></div>
       </div>
       <div class="card panel">
-        <h2>Recommended actions</h2>
+        <h2>Rule-based operator prompts</h2>
+        <p class="info panel-note">Prompts for review only. Verify against site procedures and qualified engineering judgment.</p>
         <ul class="alerts" id="action-list"></ul>
       </div>
     </div>
     <div class="grid charts">
       <div class="card panel">
-        <h2>What-if performance scenario</h2>
+        <h2>Illustrative sensitivity scenario</h2>
         <div class="scenario-controls">
           <label>
             <span>Ambient temp change</span>
@@ -264,37 +1154,47 @@
             <strong id="scenario-vacuum-value">-4 cm Hg</strong>
           </label>
           <label>
-            <span>Maintenance priority</span>
+            <span>Review priority (demo only)</span>
             <input id="scenario-maint" type="range" min="0" max="100" value="55" />
             <strong id="scenario-maint-value">55 / 100</strong>
           </label>
         </div>
         <div class="scenario-output">
-          <div><span>Predicted output</span><strong id="scenario-output">-- MW</strong></div>
-          <div><span>Risk index</span><strong id="scenario-risk">--</strong></div>
-          <div><span>Estimated energy impact</span><strong id="scenario-energy">--</strong></div>
+          <div><span>Illustrative output</span><strong id="scenario-output">-- MW</strong></div>
+          <div><span>Demo review score</span><strong id="scenario-risk">--</strong></div>
+          <div><span>Output change vs sample</span><strong id="scenario-energy">-- MW</strong></div>
         </div>
+        <p class="info provenance-note">Hand-coded sensitivity coefficients are for interface demonstration, not a trained forecast or validated plant physics. Review priority changes only the demo score, not the output estimate.</p>
       </div>
-      <div class="card panel">
-        <h2>ROI impact & value gain</h2>
-        <div class="roi-grid">
-          <div class="roi-card">
-            <span>Energy saved</span>
-            <strong id="roi-energy">--</strong>
+      <div class="card panel value-case">
+        <div class="value-case-head">
+          <div>
+            <span class="eyebrow">TRANSPARENT BUSINESS CASE</span>
+            <h2>Illustrative generation-value explorer</h2>
           </div>
-          <div class="roi-card">
-            <span>Maintenance avoided</span>
-            <strong id="roi-maint">--</strong>
+          <span class="chip subtle">Assumption-driven, not a savings claim</span>
+        </div>
+        <div class="value-case-layout">
+          <div class="value-inputs">
+            <label><span>Output recovery assumption</span><strong id="recovery-value">0.1%</strong><input id="recovery-slider" type="range" min="0.1" max="1.5" step="0.1" value="0.1" /></label>
+            <label><span>Operating hours / year</span><strong id="hours-value">7,000 h</strong><input id="hours-slider" type="range" min="4000" max="8500" step="100" value="7000" /></label>
+            <label><span>Power value assumption</span><strong id="tariff-value">₹7.50 / kWh</strong><input id="tariff-slider" type="range" min="4" max="12" step="0.25" value="7.5" /></label>
+            <label><span>Annual operating cost</span><strong id="om-value">₹30 lakh</strong><input id="om-slider" type="range" min="0" max="200" step="5" value="30" /></label>
+            <label><span>One-time pilot cost</span><strong id="cost-value">₹300 lakh</strong><input id="cost-slider" type="range" min="100" max="1000" step="25" value="300" /></label>
+            <div class="value-results">
+              <div><span>Scenario generation</span><strong id="value-energy">-- MWh/year</strong></div>
+              <div><span>Gross annual value</span><strong id="value-gross">--</strong></div>
+              <div><span>Net annual value after O&amp;M</span><strong id="value-net">--</strong></div>
+              <div><span>First-year value after pilot</span><strong id="value-first-year">--</strong></div>
+              <div><span>Simple payback</span><strong id="value-payback">--</strong></div>
+            </div>
           </div>
-          <div class="roi-card">
-            <span>Output uplift</span>
-            <strong id="roi-uplift">--</strong>
-          </div>
-          <div class="roi-card highlight">
-            <span>Annual value</span>
-            <strong id="roi-total">--</strong>
+          <div class="value-chart-wrap">
+            <h3>Net annual value by recovery scenario</h3>
+            <div class="chart-frame"><canvas id="valueChart"></canvas></div>
           </div>
         </div>
+        <p class="info provenance-note">Formula: measured sample output × assumed recovery fraction × operating hours × assumed tariff, less annual operating cost. First-year value also subtracts one-time pilot cost. The sample is from UCI CCPP, not a refinery. All commercial inputs are editable placeholders; confirm them with plant and finance teams before using this estimate.</p>
       </div>
     </div>
     <div class="card panel">
@@ -309,7 +1209,11 @@
 </footer>
 
 <script src="data.js"></script>
+<script src="process-model.js"></script>
 <script src="app.js"></script>
 <script type="module" src="twin3d.js"></script>
+<script type="module" src="twin-skid-3d.js"></script>
+<script type="module" src="multistream-3d.js"></script>
+<script type="module" src="hardware-assembly-3d.js"></script>
 </body>
 </html>

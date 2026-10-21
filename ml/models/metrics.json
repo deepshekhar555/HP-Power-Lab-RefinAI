@@ -21,14 +21,52 @@
   },
   "Energy": {
     "model": "GradientBoosting",
-    "MAE_MW": 2.22,
-    "RMSE_MW": 3.028,
-    "R2": 0.96838,
+    "MAE_MW": 2.262,
+    "RMSE_MW": 3.109,
+    "R2": 0.96667,
     "dataset": "UCI Combined Cycle Power Plant",
     "rows": 9568,
     "test_rows": 1914,
     "evaluation": "Held-out 20% test split; random_state=42",
-    "test_underpredicted_points": 683,
+    "prediction_interval": {
+      "method": "Split conformal, absolute residual score",
+      "nominal_coverage": 0.9,
+      "calibration_rows": 1531,
+      "half_width_MW": 4.7887,
+      "test_coverage": 0.9127,
+      "note": "Empirical CCPP benchmark diagnostic; coverage is not guaranteed under distribution shift or on refinery data"
+    },
+    "input_reference_ranges": {
+      "AT": {
+        "lower": 5.1788,
+        "upper": 33.255599999999994
+      },
+      "V": {
+        "lower": 35.79,
+        "upper": 77.54
+      },
+      "AP": {
+        "lower": 1000.6544,
+        "upper": 1028.3646
+      },
+      "RH": {
+        "lower": 37.9066,
+        "upper": 99.3034
+      }
+    },
+    "process_monitoring": {
+      "method": "PCA multivariate statistical monitoring with Hotelling T-squared and Q residual statistics",
+      "retained_components": 3,
+      "explained_variance": 0.9745,
+      "calibration_rows": 1531,
+      "nominal_tail_rate": 0.01,
+      "t2_reference_threshold": 10.7998,
+      "q_reference_threshold": 0.686,
+      "test_t2_flag_rate": 0.012,
+      "test_q_flag_rate": 0.0104,
+      "note": "Unlabeled benchmark statistical outlier screen only; not a fault detector, and calibration may not hold under distribution shift"
+    },
+    "test_underpredicted_points": 694,
     "residual_note": "Model residual proxy only; not measured plant waste",
     "replay_file": "dashboard/ccpp_replay.json"
   }

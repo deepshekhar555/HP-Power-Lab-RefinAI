@@ -1,7 +1,6 @@
 ﻿const express = require('express');
 const http = require('http');
 const path = require('path');
-const fs = require('fs');
 const WebSocket = require('ws');
 
 const app = express();
@@ -18,16 +17,10 @@ const THRESHOLDS = {
 
 // Serve static assets
 app.use('/docs', express.static(path.join(__dirname, 'docs')));
+app.use('/ml', express.static(path.join(__dirname, 'ml')));
 
-// Inject extension script without modifying the underlying index.html file on disk
 app.get('/', (req, res) => {
-  const htmlPath = path.join(__dirname, 'dashboard', 'index.html');
-  let html = fs.readFileSync(htmlPath, 'utf8');
-  if (!html.includes('websocket_extension.js')) {
-    html = html.replace('</body>', '  <script src="websocket_extension.js"></script>\n</body>');
-  }
-  res.setHeader('Content-Type', 'text/html');
-  res.send(html);
+  res.sendFile(path.join(__dirname, 'dashboard', 'index.html'));
 });
 
 app.use(express.static(path.join(__dirname, 'dashboard')));

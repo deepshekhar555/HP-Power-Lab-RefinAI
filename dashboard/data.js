@@ -4,7 +4,8 @@ const REPLAY_CONFIG = {
   tick_ms: 1800,
   history_size: 48,
   data_file: "ccpp_replay.json",
-  benchmark_mae_mw: 2.22,
+  benchmark_mae_mw: 2.262,
+  benchmark_r2: 0.96667,
 };
 
 const INSTRUMENTS = [

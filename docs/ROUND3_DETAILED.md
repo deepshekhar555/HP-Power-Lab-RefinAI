@@ -19,7 +19,7 @@ Use seven content slides, plus a title slide and a references/source slide. Conf
 
 ## Slide 3 | Prototype and System Boundary
 
-- Demonstrate `dashboard/index.html`: interactive Three.js refinery scene, generated telemetry, status transitions, charts, and benchmark views.
+- Demonstrate `dashboard/index.html`: historical UCI replay, Three.js scene, per-sample conformal interval, model-input support check, and browser-local accept/defer/reject review log.
 - The browser simulation is not a live HPCL digital twin; it uses no plant connection.
 - The Python benchmark models are separate from the scene and do not drive dashboard telemetry or alerts.
 - Proposed pilot architecture: approved historian export -> data quality/regime checks -> unit-specific models -> human-reviewed shadow alerts.
@@ -27,7 +27,7 @@ Use seven content slides, plus a title slide and a references/source slide. Conf
 ## Slide 4 | Evidence from Public Benchmarks
 
 - NASA C-MAPSS FD001: Gradient Boosting RUL MAE 12.16 cycles on the official 100-engine test set; RUL capped at 125 cycles. Median-training-label baseline MAE: 38.01 cycles.
-- UCI Combined Cycle Power Plant: power-output regression MAE 2.220 MW, R-squared 0.968, on a fixed 20% held-out split (1,914 rows).
+- UCI Combined Cycle Power Plant: power-output regression MAE 2.262 MW, R-squared 0.96667, on a fixed 20% held-out split (1,914 rows); split-conformal 90% interval test coverage 91.27% on this split only. PCA T-squared/Q screens are included as unlabeled statistical outlier context; no fault accuracy is claimed.
 - Isolation Forest flagged 6/100 NASA test endpoints; no anomaly labels exist, so no detection accuracy is reported.
 - These datasets are adjacent-method benchmarks, not refinery data or refinery validation. Show `ml/models/metrics.json` and cite the source datasets.
 
@@ -61,6 +61,10 @@ Use seven content slides, plus a title slide and a references/source slide. Conf
 - UCI Machine Learning Repository, Combined Cycle Power Plant: https://archive.ics.uci.edu/dataset/294/combined+cycle+power+plant
 - C-MAPSS reference: A. Saxena et al., "Damage Propagation Modeling for Aircraft Engine Run-to-Failure Simulation," PHM 2008.
 - UCI CCPP references and data details: see the UCI dataset page and included `ml/data/raw/CCPP/Readme.txt`.
+- S. J. Qin, "Survey on data-driven industrial process monitoring and diagnosis," *Annual Reviews in Control*, 36(2), 220–234 (2012), https://doi.org/10.1016/j.arcontrol.2012.09.004.
+- A. K. S. Jardine, D. Lin, and D. Banjevic, "A review on machinery diagnostics and prognostics implementing condition-based maintenance," *Mechanical Systems and Signal Processing*, 20(7), 1483–1510 (2006), https://doi.org/10.1016/j.ymssp.2005.09.012.
+- J. E. Jackson and G. S. Mudholkar, "Control procedures for residuals associated with principal component analysis," *Technometrics*, 21(3), 341–349 (1979), https://doi.org/10.1080/00401706.1979.10489779.
+- A. N. Angelopoulos and S. Bates, "A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification," arXiv:2107.07511, https://arxiv.org/abs/2107.07511.
 
 ## Optional Three-Minute Video Outline
 
